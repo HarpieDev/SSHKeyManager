@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="surface" x1="26" y1="14" x2="224" y2="246" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#AC8DF3"/>
+      <stop offset=".48" stop-color="#8057CF"/>
+      <stop offset="1" stop-color="#4E308F"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="18" y1="8" x2="237" y2="248" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E7D7FF" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#C8A4FF" stop-opacity=".08"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="65" y1="60" x2="183" y2="190" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEE5FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="5" width="246" height="246" rx="57" fill="url(#surface)"/>
+  <rect x="6" y="6" width="244" height="244" rx="56" stroke="url(#edge)" stroke-width="2"/>
+  <g stroke="url(#mark)" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="82" cy="82" r="23" stroke-width="17"/>
+    <path d="M82 108v72M174 66v114M82 131h92" stroke-width="20"/>
+  </g>
+</svg>
