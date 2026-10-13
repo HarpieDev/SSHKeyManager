@@ -1,3 +1,5 @@
+from core.i18n import tr, translate_message
+from ui.language import set_translated, add_translated_tab
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QGuiApplication, QMouseEvent
 from PySide6.QtWidgets import (
@@ -47,7 +49,7 @@ class PublicKeyBlock(QTextEdit):
         self.setReadOnly(True)
         self.set_key_text(text)
         self.setFixedHeight(92)
-        self.setToolTip("Clé publique : sélectionnez le texte ou utilisez le bouton Copier.")
+        set_translated(self, 'setToolTip', tr('Clé publique : sélectionnez le texte ou utilisez le bouton Copier.'))
 
     def set_key_text(self, text: str) -> None:
         self._full_text = text
@@ -58,17 +60,17 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
     def __init__(self, key: SshKey, parent=None):
         super().__init__(parent)
         self._key = key
-        self.setWindowTitle(f"Gérer — {key.name}")
+        set_translated(self, 'setWindowTitle', tr('Gérer — {p0}', p0=key.name))
         self.resize(720, 820)
         self.setMinimumSize(580, 540)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 26, 28, 24)
         layout.setSpacing(12)
-        layout.addWidget(label("DÉTAILS DE LA CLÉ", "Eyebrow"))
-        protection = "Protégée par passphrase" if key.encrypted else "Sans passphrase" if key.has_private else "Clé publique seule"
+        layout.addWidget(label(tr('DÉTAILS DE LA CLÉ'), "Eyebrow"))
+        protection = tr('Protégée par passphrase') if key.encrypted else tr('Sans passphrase') if key.has_private else tr('Clé publique seule')
         layout.addWidget(dialog_header(key.name, f"{key_type_name(key.key_type)}  ·  {protection}  ·  {key.created_at:%d/%m/%Y}"))
         if key.warning:
-            warning = label(key.warning)
+            warning = label(translate_message(key.warning))
             warning.setStyleSheet("color: #F0B779; background: #372B22; border: 1px solid #543D29; border-radius: 12px; padding: 14px;")
             layout.addWidget(warning)
         self._tabs = QTabWidget()
@@ -82,42 +84,42 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
             scroll.setWidget(widget)
-            self._tabs.addTab(scroll, title)
+            add_translated_tab(self._tabs, scroll, title)
             return inner
 
-        overview = page("Vue d’ensemble")
-        overview.addWidget(label("Empreinte SHA256", "FieldLabel"))
+        overview = page(tr('Vue d’ensemble'))
+        overview.addWidget(label(tr('Empreinte SHA256'), "FieldLabel"))
         fingerprint = _info_label(key.fingerprint_sha256 or "—")
         fingerprint.setObjectName("Fingerprint")
         overview.addWidget(fingerprint)
         self._comment = QLineEdit(key.comment or "")
-        self._comment.setPlaceholderText("Commentaire de la clé")
-        overview.addWidget(label("Commentaire", "FieldLabel"))
+        set_translated(self._comment, 'setPlaceholderText', tr('Commentaire de la clé'))
+        overview.addWidget(label(tr('Commentaire'), "FieldLabel"))
         row = QHBoxLayout()
         row.setSpacing(10)
         row.addWidget(self._comment, 1)
-        row.addWidget(button("Enregistrer", self._on_save_comment))
+        row.addWidget(button(tr('Enregistrer'), self._on_save_comment))
         overview.addLayout(row)
         self._tag_widget = TagAssignWidget(key.tag_id)
         self._tag_widget.tag_applied.connect(self._on_tag_applied)
-        overview.addWidget(field("Tag", self._tag_widget))
-        overview.addWidget(label("Clé publique", "FieldLabel"))
+        overview.addWidget(field(tr('Tag'), self._tag_widget))
+        overview.addWidget(label(tr('Clé publique'), "FieldLabel"))
         self._public_key = PublicKeyBlock(key.public_key_text or "—")
         overview.addWidget(self._public_key)
-        overview.addWidget(label("À ajouter sur votre serveur ou votre compte GitHub."))
-        overview.addWidget(label("Fichier local", "FieldLabel"))
+        overview.addWidget(label(tr('À ajouter sur votre serveur ou votre compte GitHub.')))
+        overview.addWidget(label(tr('Fichier local'), "FieldLabel"))
         overview.addWidget(_info_label(str(key.private_path if key.has_private else key.public_path)))
         overview.addStretch()
 
-        connection_layout = page("Connexion")
-        connection_layout.addWidget(label("Connexion au serveur", "ConnectionTitle"))
+        connection_layout = page(tr('Connexion'))
+        connection_layout.addWidget(label(tr('Connexion au serveur'), "ConnectionTitle"))
         connection_layout.addWidget(label("Enregistrez l’adresse et l’utilisateur avant de vous connecter."))
         try:
             connection = ssh_manager.get_config_entry(key.name)
         except (OSError, ValueError, UnicodeError):
             connection = {}
         self._host = QLineEdit(connection.get("hostname", ""))
-        self._host.setPlaceholderText("IP ou nom du serveur")
+        set_translated(self._host, 'setPlaceholderText', tr('IP ou nom du serveur'))
         self._user = QLineEdit(connection.get("user", "root"))
         self._port = QSpinBox()
         self._port.setRange(1, 65535)
@@ -125,72 +127,72 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
             self._port.setValue(int(connection.get("port", "22")))
         except ValueError:
             self._port.setValue(22)
-        connection_layout.addWidget(field("Serveur", self._host))
+        connection_layout.addWidget(field(tr('Serveur'), self._host))
         row = QHBoxLayout()
         row.setSpacing(16)
-        row.addWidget(field("Utilisateur SSH", self._user), 2)
-        row.addWidget(field("Port", self._port), 1)
+        row.addWidget(field(tr('Utilisateur SSH'), self._user), 2)
+        row.addWidget(field(tr('Port'), self._port), 1)
         connection_layout.addLayout(row)
         row = QHBoxLayout()
-        row.addWidget(button("Enregistrer", self._on_save_connection))
-        connect_btn = button("Se connecter", self._on_connect, "PrimaryBtn", "terminal")
+        row.addWidget(button(tr('Enregistrer'), self._on_save_connection))
+        connect_btn = button(tr('Se connecter'), self._on_connect, "PrimaryBtn", "terminal")
         connect_btn.setEnabled(key.has_private)
         row.addWidget(connect_btn)
         connection_layout.addLayout(row)
         connection_layout.addSpacing(20)
         connection_layout.addWidget(label("SSH Agent", "SectionTitle"))
-        connection_layout.addWidget(label("Chargez la clé dans l’agent pour éviter de saisir sa passphrase à chaque connexion."))
+        connection_layout.addWidget(label(tr('Chargez la clé dans l’agent pour éviter de saisir sa passphrase à chaque connexion.')))
         row = QHBoxLayout()
-        add_btn = button("Ajouter à l’agent", self._on_agent_add, symbol="plus")
+        add_btn = button(tr('Ajouter à l’agent'), self._on_agent_add, symbol="plus")
         add_btn.setEnabled(key.has_private)
         row.addWidget(add_btn)
-        row.addWidget(button("Retirer de l’agent", self._on_agent_remove))
+        row.addWidget(button(tr('Retirer de l’agent'), self._on_agent_remove))
         connection_layout.addLayout(row)
         connection_layout.addStretch()
 
-        security = page("Sécurité et fichiers")
-        security.addWidget(label("Protection & vérification", "SecurityTitle"))
-        security.addWidget(label("Contrôlez la paire de clés, sa passphrase et les droits du fichier privé."))
+        security = page(tr('Sécurité et fichiers'))
+        security.addWidget(label(tr('Protection & vérification'), "SecurityTitle"))
+        security.addWidget(label(tr('Contrôlez la paire de clés, sa passphrase et les droits du fichier privé.')))
         grid = QGridLayout()
         grid.setSpacing(10)
-        for i, (text, handler) in enumerate((("Vérifier la clé", self._on_verify), ("Changer la passphrase", self._on_passphrase), ("Réparer la clé publique", self._on_repair), ("Protéger le fichier", self._on_permissions))):
+        for i, (text, handler) in enumerate(((tr('Vérifier la clé'), self._on_verify), (tr('Changer la passphrase'), self._on_passphrase), (tr('Réparer la clé publique'), self._on_repair), (tr('Protéger le fichier'), self._on_permissions))):
             action = button(text, handler)
             action.setEnabled(key.has_private)
             grid.addWidget(action, i // 2, i % 2)
         security.addLayout(grid)
         security.addSpacing(8)
-        security.addWidget(label("Export", "SectionTitle"))
+        security.addWidget(label(tr('Export'), "SectionTitle"))
         row = QHBoxLayout()
-        for text, private in (("Exporter publique", False), ("Exporter privée", True)):
+        for text, private in ((tr('Exporter publique'), False), (tr('Exporter privée'), True)):
             action = button(text, lambda checked=False, private=private: self._on_export(private))
             action.setEnabled(key.has_private if private else bool(key.public_key_text))
             row.addWidget(action)
         security.addLayout(row)
         security.addSpacing(8)
         self._new_name = QLineEdit()
-        self._new_name.setPlaceholderText("Nouveau nom")
-        security.addWidget(label("Renommer la clé", "FieldLabel"))
+        set_translated(self._new_name, 'setPlaceholderText', tr('Nouveau nom'))
+        security.addWidget(label(tr('Renommer la clé'), "FieldLabel"))
         row = QHBoxLayout()
         row.addWidget(self._new_name, 1)
-        row.addWidget(button("Renommer", self._on_rename))
+        row.addWidget(button(tr('Renommer'), self._on_rename))
         security.addLayout(row)
         security.addStretch()
-        security.addWidget(label("La suppression déplace la clé dans la corbeille Harpie. Elle reste récupérable."))
-        security.addWidget(button("Déplacer dans la corbeille", self._on_delete, "DangerBtn", "trash"))
+        security.addWidget(label(tr('La suppression déplace la clé dans la corbeille Harpie. Elle reste récupérable.')))
+        security.addWidget(button(tr('Déplacer dans la corbeille'), self._on_delete, "DangerBtn", "trash"))
 
         actions = QHBoxLayout()
-        copy_btn = button("Copier la clé publique", self._on_copy, "PrimaryBtn", "copy")
+        copy_btn = button(tr('Copier la clé publique'), self._on_copy, "PrimaryBtn", "copy")
         copy_btn.setEnabled(bool(key.public_key_text))
         actions.addWidget(copy_btn)
         actions.addStretch()
-        actions.addWidget(button("Fermer", self.accept))
+        actions.addWidget(button(tr('Fermer'), self.accept))
         layout.addLayout(actions)
 
     def _on_tag_applied(self, tag_id: str) -> None:
         try:
             metadata_store.set_key_tag(self._key.name, tag_id)
         except (OSError, ValueError) as exc:
-            QMessageBox.warning(self, "Tag", str(exc))
+            QMessageBox.warning(self, tr('Tag'), str(exc))
             return
         if tag_id:
             tag = metadata_store.get_tag(tag_id)
@@ -202,18 +204,18 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
             self._key.tag_id = ""
             self._key.tag_label = ""
             self._key.tag_color = ""
-        label = tag_display(self._key.tag_label) if self._key.tag_label else "Aucun"
+        label = tag_display(self._key.tag_label) if self._key.tag_label else tr('Aucun')
         if self.parent() and hasattr(self.parent(), "statusBar"):
-            self.parent().statusBar().showMessage(f"Tag appliqué : {label}", 2500)
+            self.parent().statusBar().showMessage(tr('Tag appliqué : {p0}', p0=label), 2500)
 
     def _on_copy(self) -> None:
         text, err = ssh_manager.read_public_key(self._key.name)
         if err:
-            QMessageBox.warning(self, "Erreur", err)
+            QMessageBox.warning(self, tr('Erreur'), err)
             return
-        QGuiApplication.clipboard().setText(text)
+        set_translated(QGuiApplication.clipboard(), 'setText', text)
         if self.parent() and hasattr(self.parent(), "statusBar"):
-            self.parent().statusBar().showMessage("Clé publique copiée", 2500)
+            self.parent().statusBar().showMessage(tr('Clé publique copiée'), 2500)
 
     def _on_save_comment(self) -> None:
         comment = self._comment.text().strip()
@@ -222,15 +224,15 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
     def _on_rename(self) -> None:
         new_name = self._new_name.text().strip()
         if not new_name:
-            QMessageBox.warning(self, "Renommer", "Indiquez un nouveau nom.")
+            QMessageBox.warning(self, tr('Renommer'), tr('Indiquez un nouveau nom.'))
             return
         self.run_task(lambda: ssh_manager.rename_key(self._key.name, new_name), self._mutation_finished)
 
     def _on_delete(self) -> None:
         reply = QMessageBox.question(
             self,
-            "Confirmer la suppression",
-            f"Déplacer « {self._key.name} » dans la corbeille Harpie ?\nVous pourrez la restaurer depuis la Corbeille.",
+            tr('Confirmer la suppression'),
+            tr('Déplacer « {p0} » dans la corbeille Harpie ?\nVous pourrez la restaurer depuis la Corbeille.', p0=self._key.name),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -243,7 +245,7 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
         if ok:
             self.accept()
         else:
-            QMessageBox.warning(self, "Opération impossible", error)
+            QMessageBox.warning(self, tr('Opération impossible'), error)
 
     def _on_save_connection(self):
         host, user, port = self._host.text().strip(), self._user.text().strip(), self._port.value()
@@ -253,7 +255,7 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
         try:
             ssh_manager.connect(self._key.name)
         except (OSError, ValueError) as exc:
-            QMessageBox.warning(self, "Connexion", str(exc))
+            QMessageBox.warning(self, tr('Connexion'), str(exc))
 
     def _on_agent_add(self):
         try:
@@ -273,67 +275,67 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
             if ok:
                 self.accept()
             elif "passphrase" in error.lower():
-                password, accepted = QInputDialog.getText(self, "Clé chiffrée", "Passphrase", QLineEdit.EchoMode.Password)
+                password, accepted = QInputDialog.getText(self, tr('Clé chiffrée'), tr('Passphrase'), QLineEdit.EchoMode.Password)
                 if accepted:
                     self.run_task(lambda: ssh_manager.repair_public_key(self._key.name, password), completed)
             else:
-                QMessageBox.warning(self, "Réparation impossible", error)
+                QMessageBox.warning(self, tr('Réparation impossible'), error)
         self.run_task(lambda: ssh_manager.repair_public_key(self._key.name), completed)
 
     def _on_export(self, private: bool):
-        if private and QMessageBox.question(self, "Exporter la clé privée", "Exporter la clé privée dans un fichier local ?\nConservez ce fichier à l'abri : il permet de vous authentifier.",
+        if private and QMessageBox.question(self, tr('Exporter la clé privée'), tr("Exporter la clé privée dans un fichier local ?\nConservez ce fichier à l'abri : il permet de vous authentifier."),
                                              QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             return
-        destination, _ = QFileDialog.getSaveFileName(self, "Exporter la clé", self._key.name + ("" if private else ".pub"))
+        destination, _ = QFileDialog.getSaveFileName(self, tr('Exporter la clé'), self._key.name + ("" if private else ".pub"))
         if not destination:
             return
         def completed(result):
             ok, error = result
             if ok:
-                QMessageBox.information(self, "Export", "Clé exportée.")
+                QMessageBox.information(self, tr('Export'), tr('Clé exportée.'))
             else:
-                QMessageBox.warning(self, "Export impossible", error)
+                QMessageBox.warning(self, tr('Export impossible'), error)
         self.run_task(lambda: ssh_manager.export_key(self._key.name, Path(destination), private), completed)
 
     def _on_verify(self):
         def completed(result):
             ok, error = result
             if ok:
-                QMessageBox.information(self, "Vérification", "Clé privée valide et clé publique correspondante.")
+                QMessageBox.information(self, tr('Vérification'), tr('Clé privée valide et clé publique correspondante.'))
             elif "passphrase" in error.lower():
-                password, accepted = QInputDialog.getText(self, "Clé chiffrée", "Passphrase", QLineEdit.EchoMode.Password)
+                password, accepted = QInputDialog.getText(self, tr('Clé chiffrée'), tr('Passphrase'), QLineEdit.EchoMode.Password)
                 if accepted:
                     self.run_task(lambda: ssh_manager.validate_key(self._key.name, password), completed)
             else:
-                QMessageBox.warning(self, "Vérification", error)
+                QMessageBox.warning(self, tr('Vérification'), error)
         self.run_task(lambda: ssh_manager.validate_key(self._key.name), completed)
 
     def _on_passphrase(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle("Changer la passphrase")
+        set_translated(dialog, 'setWindowTitle', tr('Changer la passphrase'))
         dialog.setMinimumWidth(540)
         layout = QVBoxLayout(dialog)
         layout.setContentsMargins(28, 26, 28, 24)
         layout.setSpacing(18)
-        layout.addWidget(dialog_header("Changer la passphrase", "Mettez à jour la protection du fichier privé.", "lock", "purple"))
+        layout.addWidget(dialog_header(tr('Changer la passphrase'), tr('Mettez à jour la protection du fichier privé.'), "lock", "purple"))
         form = QVBoxLayout()
         form.setSpacing(14)
         fields = []
-        for caption in ("Passphrase actuelle (si protégée)", "Nouvelle passphrase (optionnelle)", "Confirmer la nouvelle passphrase"):
+        for caption in (tr('Passphrase actuelle (si protégée)'), tr('Nouvelle passphrase (optionnelle)'), tr('Confirmer la nouvelle passphrase')):
             control = QLineEdit()
             control.setEchoMode(QLineEdit.EchoMode.Password)
             fields.append(control)
             form.addWidget(field(caption, control))
         layout.addLayout(form)
-        layout.addWidget(label("Laisser la nouvelle passphrase vide retire la protection de la clé.", "SecurityNote"))
+        layout.addWidget(label(tr('Laisser la nouvelle passphrase vide retire la protection de la clé.'), "SecurityNote"))
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Enregistrer")
+        set_translated(buttons.button(QDialogButtonBox.StandardButton.Ok), 'setText', tr('Enregistrer'))
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryBtn")
-        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Annuler")
+        set_translated(buttons.button(QDialogButtonBox.StandardButton.Cancel), 'setText', tr('Annuler'))
         layout.addWidget(buttons)
         def confirm():
             if fields[1].text() != fields[2].text():
-                QMessageBox.warning(dialog, "Passphrase", "Les passphrases ne correspondent pas.")
+                QMessageBox.warning(dialog, tr('Passphrase'), tr('Les passphrases ne correspondent pas.'))
                 return
             dialog.accept()
         buttons.accepted.connect(confirm)

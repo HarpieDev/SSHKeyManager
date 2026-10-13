@@ -1,3 +1,4 @@
+from core.i18n import tr
 import base64
 import json
 import logging
@@ -46,19 +47,19 @@ class SshKey:
 
 def get_ssh_dir() -> Path:
     if SSH_DIR.is_symlink():
-        raise ValueError("Le dossier .ssh est un lien symbolique : modification automatique refusée.")
+        raise ValueError(tr('Le dossier .ssh est un lien symbolique : modification automatique refusée.'))
     SSH_DIR.mkdir(parents=True, exist_ok=True)
     return SSH_DIR
 
 
 def _key_paths(name: str) -> tuple[Path, Path]:
     if not name or Path(name).name != name or any(c in name for c in '/\\:\0\r\n') or name.startswith(".") or name.casefold() in RESERVED_NAMES:
-        raise ValueError("Nom de fichier de clé invalide ou réservé.")
+        raise ValueError(tr('Nom de fichier de clé invalide ou réservé.'))
     directory = get_ssh_dir()
     paths = directory / name, directory / f"{name}.pub"
     for path in paths:
         if path.is_symlink() or not path.resolve().is_relative_to(directory.resolve()):
-            raise ValueError("Un lien symbolique ne peut pas être modifié.")
+            raise ValueError(tr('Un lien symbolique ne peut pas être modifié.'))
     return paths
 
 
@@ -69,7 +70,7 @@ def open_ssh_folder() -> None:
 def _read_config() -> str:
     get_ssh_dir()
     if SSH_CONFIG.is_symlink():
-        raise ValueError("Le fichier config est un lien symbolique.")
+        raise ValueError(tr('Le fichier config est un lien symbolique.'))
     return SSH_CONFIG.read_text(encoding="utf-8-sig") if SSH_CONFIG.exists() else ""
 
 
@@ -87,11 +88,11 @@ def set_config_entry(key_name: str, hostname: str, user: str, port: int = 22) ->
     try:
         _key_paths(key_name)
         if not re.fullmatch(r"[a-zA-Z0-9._:\[\]-]+", hostname) or hostname.startswith("-"):
-            raise ValueError("Adresse du serveur invalide.")
+            raise ValueError(tr('Adresse du serveur invalide.'))
         if not re.fullmatch(r"[a-zA-Z0-9_.@\\-]+", user) or user.startswith("-"):
-            raise ValueError("Utilisateur SSH invalide.")
+            raise ValueError(tr('Utilisateur SSH invalide.'))
         if not 1 <= int(port) <= 65535:
-            raise ValueError("Le port doit être compris entre 1 et 65535.")
+            raise ValueError(tr('Le port doit être compris entre 1 et 65535.'))
         with LOCK:
             _write_config(ssh_config.set_connection(_read_config(), key_name, hostname, user, int(port), get_ssh_dir()))
         return True, ""
@@ -114,18 +115,18 @@ def rename_config_entry(old: str, new: str) -> None:
 
 
 def check_openssh_available() -> tuple[bool, str]:
-    return (True, "") if shutil.which("ssh") else (False, "OpenSSH est requis pour les connexions et SSH Agent. La gestion des clés reste disponible.")
+    return (True, "") if shutil.which("ssh") else (False, tr('OpenSSH est requis pour les connexions et SSH Agent. La gestion des clés reste disponible.'))
 
 
 def _run(command: str, args: list[str], timeout: int = 15) -> subprocess.CompletedProcess[str]:
     executable = shutil.which(command)
     if not executable:
-        raise ValueError(f"{command} introuvable. Installez le client OpenSSH Windows.")
+        raise ValueError(tr('{p0} introuvable. Installez le client OpenSSH Windows.', p0=command))
     try:
         return subprocess.run([executable, *args], capture_output=True, text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL, timeout=timeout,
                               creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
     except subprocess.TimeoutExpired:
-        raise ValueError(f"{command} n'a pas répondu après {timeout} secondes.") from None
+        raise ValueError(tr("{p0} n'a pas répondu après {p1} secondes.", p0=command, p1=timeout)) from None
 
 
 def scan_keys() -> list[SshKey]:
@@ -162,23 +163,23 @@ def scan_keys() -> list[SshKey]:
                     if permission_warning:
                         problems.append(permission_warning)
                     if encrypted and embedded is None:
-                        problems.append("Clé PEM chiffrée : correspondance à vérifier avec la passphrase.")
+                        problems.append(tr('Clé PEM chiffrée : correspondance à vérifier avec la passphrase.'))
                 except Exception:
                     # Ne jamais inclure les octets de la clé dans une erreur ou un log.
-                    problems.append("Clé privée illisible ou format non pris en charge.")
+                    problems.append(tr('Clé privée illisible ou format non pris en charge.'))
             else:
-                problems.append("Clé privée manquante : clé publique seule.")
+                problems.append(tr('Clé privée manquante : clé publique seule.'))
             if public.is_file() and not public.is_symlink():
                 try:
                     text = public.read_text(encoding="utf-8-sig").strip()
                     kind, comment, fingerprint = key_material.parse_public(text)
                     if embedded and text.split()[:2] != embedded.decode("ascii").split()[:2]:
-                        problems.append("Les clés privée et publique ne correspondent pas.")
+                        problems.append(tr('Les clés privée et publique ne correspondent pas.'))
                 except (OSError, ValueError, TypeError, UnicodeError):
-                    problems.append("Clé publique invalide ou illisible.")
+                    problems.append(tr('Clé publique invalide ou illisible.'))
                     text = ""
             else:
-                problems.append("Fichier .pub manquant. Utilisez « Réparer publique ».")
+                problems.append(tr('Fichier .pub manquant. Utilisez « Réparer publique ».'))
                 if embedded:
                     text = embedded.decode("ascii")
                     kind, comment, fingerprint = key_material.parse_public(text)
@@ -196,9 +197,9 @@ def scan_keys() -> list[SshKey]:
 
 def validate_key_name(name: str, existing_names: set[str] | None = None) -> tuple[bool, str]:
     if not NAME_PATTERN.fullmatch(name) or name.casefold() in RESERVED_NAMES:
-        return False, "Utilisez 1 à 100 lettres, chiffres, _ ou -. Les noms Windows réservés sont interdits."
+        return False, tr('Utilisez 1 à 100 lettres, chiffres, _ ou -. Les noms Windows réservés sont interdits.')
     if existing_names and name.casefold() in {n.casefold() for n in existing_names}:
-        return False, "Une clé avec ce nom existe déjà."
+        return False, tr('Une clé avec ce nom existe déjà.')
     return True, ""
 
 
@@ -209,13 +210,13 @@ def _ensure_free(name: str) -> tuple[Path, Path]:
     paths = _key_paths(name)
     existing = {p.name.casefold() for p in get_ssh_dir().iterdir()}
     if any(path.name.casefold() in existing for path in paths):
-        raise ValueError("Un fichier avec ce nom existe déjà, même s'il n'est pas listé.")
+        raise ValueError(tr("Un fichier avec ce nom existe déjà, même s'il n'est pas listé."))
     return paths
 
 
 def _clean_comment(comment: str) -> str:
     if any(c in comment for c in "\r\n\0"):
-        raise ValueError("Le commentaire doit tenir sur une seule ligne.")
+        raise ValueError(tr('Le commentaire doit tenir sur une seule ligne.'))
     return comment.strip()
 
 
@@ -236,11 +237,11 @@ def create_key(name: str, comment: str, passphrase: str, key_type: str = "ed2551
             comment = _clean_comment(comment) or name
             private, public = key_material.generate(key_type, passphrase)
             _save_pair(name, private, public + b" " + comment.encode("utf-8"))
-        logger.info("Clé créée : %s", name)
+        logger.info(tr('Clé créée : %s'), name)
         return True, ""
     except Exception as exc:
-        logger.error("Création de clé échouée (%s)", type(exc).__name__)
-        return False, str(exc) if isinstance(exc, (OSError, ValueError)) else "Impossible de créer la clé."
+        logger.error(tr('Création de clé échouée (%s)'), type(exc).__name__)
+        return False, str(exc) if isinstance(exc, (OSError, ValueError)) else tr('Impossible de créer la clé.')
 
 
 def _snapshot():
@@ -266,7 +267,7 @@ def rename_key(old_name: str, new_name: str) -> tuple[bool, str]:
                 return True, ""
             new = _ensure_free(new_name)
             if not any(p.exists() for p in old):
-                raise ValueError("Clé introuvable.")
+                raise ValueError(tr('Clé introuvable.'))
             snapshot = _snapshot()
             for source, target in zip(old, new):
                 if source.exists():
@@ -274,7 +275,7 @@ def rename_key(old_name: str, new_name: str) -> tuple[bool, str]:
                     moved.append((source, target))
             rename_config_entry(old_name, new_name)
             metadata_store.rename_key_metadata(old_name, new_name)
-        logger.info("Clé renommée : %s → %s", old_name, new_name)
+        logger.info(tr('Clé renommée : %s → %s'), old_name, new_name)
         return True, ""
     except Exception as exc:
         try:
@@ -283,8 +284,8 @@ def rename_key(old_name: str, new_name: str) -> tuple[bool, str]:
             if moved and snapshot:
                 _restore_snapshot(snapshot)
         except Exception:
-            return False, "Renommage interrompu et restauration incomplète. Vérifiez les fichiers dans .ssh ; aucune clé n'a été effacée."
-        return False, f"Renommage annulé : {exc}"
+            return False, tr("Renommage interrompu et restauration incomplète. Vérifiez les fichiers dans .ssh ; aucune clé n'a été effacée.")
+        return False, tr('Renommage annulé : {p0}', p0=exc)
 
 
 def update_comment(name: str, comment: str, passphrase: str = "") -> tuple[bool, str]:
@@ -310,11 +311,11 @@ def delete_key(name: str) -> tuple[bool, str]:
         with LOCK, metadata_store.LOCK:
             paths = _key_paths(name)
             if not any(p.exists() for p in paths):
-                raise ValueError("Clé introuvable.")
+                raise ValueError(tr('Clé introuvable.'))
             snapshot = _snapshot()
             trash = get_ssh_dir() / ".harpie-trash"
             if trash.is_symlink():
-                raise ValueError("La corbeille est un lien symbolique.")
+                raise ValueError(tr('La corbeille est un lien symbolique.'))
             trash.mkdir(exist_ok=True)
             protect_private(trash)
             archive = trash / uuid.uuid4().hex
@@ -341,8 +342,8 @@ def delete_key(name: str) -> tuple[bool, str]:
                 (archive / "manifest.json").unlink(missing_ok=True)
                 archive.rmdir()
         except Exception:
-            return False, "Suppression interrompue. Les fichiers sont conservés dans .ssh ou .harpie-trash."
-        return False, f"Suppression annulée : {exc}"
+            return False, tr('Suppression interrompue. Les fichiers sont conservés dans .ssh ou .harpie-trash.')
+        return False, tr('Suppression annulée : {p0}', p0=exc)
 
 
 def list_deleted_keys() -> list[dict]:
@@ -367,24 +368,24 @@ def restore_deleted_key(archive_id: str) -> tuple[bool, str]:
     try:
         with LOCK, metadata_store.LOCK:
             if not re.fullmatch(r"[0-9a-f]{32}", archive_id):
-                raise ValueError("Archive invalide.")
+                raise ValueError(tr('Archive invalide.'))
             archive = get_ssh_dir() / ".harpie-trash" / archive_id
             if archive.is_symlink() or not archive.resolve().is_relative_to(get_ssh_dir().resolve()):
-                raise ValueError("Archive invalide.")
+                raise ValueError(tr('Archive invalide.'))
             manifest = json.loads((archive / "manifest.json").read_text(encoding="utf-8"))
             private, public = _key_paths(manifest["name"])
             if private.exists() or public.exists():
-                raise ValueError("Ce nom est déjà utilisé. Renommez la clé existante avant de restaurer.")
+                raise ValueError(tr('Ce nom est déjà utilisé. Renommez la clé existante avant de restaurer.'))
             snapshot = _snapshot()
             for label, target in (("private", private), ("public", public)):
                 source = archive / label
                 if source.is_symlink():
-                    raise ValueError("Archive invalide.")
+                    raise ValueError(tr('Archive invalide.'))
                 if source.exists():
                     source.rename(target)
                     moved.append((source, target))
             if not moved:
-                raise ValueError("Archive vide.")
+                raise ValueError(tr('Archive vide.'))
             data = copy.deepcopy(snapshot[1])
             tag_id = manifest.get("metadata", {}).get("tag_id", "")
             if tag_id in data["tags"]:
@@ -407,8 +408,8 @@ def restore_deleted_key(archive_id: str) -> tuple[bool, str]:
             if moved and snapshot:
                 _restore_snapshot(snapshot)
         except Exception:
-            return False, "Restauration interrompue. Vérifiez .ssh et la corbeille Harpie."
-        return False, f"Restauration annulée : {exc}"
+            return False, tr('Restauration interrompue. Vérifiez .ssh et la corbeille Harpie.')
+        return False, tr('Restauration annulée : {p0}', p0=exc)
 
 
 def read_public_key(name: str) -> tuple[str, str]:
@@ -427,11 +428,11 @@ def repair_public_key(name: str, passphrase: str = "") -> tuple[bool, str]:
             private, public = _key_paths(name)
             key = key_material.load_private(private.read_bytes(), passphrase)
             if public.exists():
-                raise ValueError("Le fichier .pub existe déjà. Il ne sera pas écrasé.")
+                raise ValueError(tr('Le fichier .pub existe déjà. Il ne sera pas écrasé.'))
             atomic_write(public, key_material.public_bytes(key) + b" " + name.encode("utf-8") + b"\n", exclusive=True)
         return True, ""
     except Exception as exc:
-        return False, str(exc) if isinstance(exc, (ValueError, OSError)) else "Format de clé non pris en charge."
+        return False, str(exc) if isinstance(exc, (ValueError, OSError)) else tr('Format de clé non pris en charge.')
 
 
 def validate_key(name: str, passphrase: str = "") -> tuple[bool, str]:
@@ -441,10 +442,10 @@ def validate_key(name: str, passphrase: str = "") -> tuple[bool, str]:
         text = public.read_text(encoding="utf-8-sig").strip()
         key_material.parse_public(text)
         if text.split()[:2] != key_material.public_bytes(key).decode("ascii").split()[:2]:
-            raise ValueError("Les clés privée et publique ne correspondent pas.")
+            raise ValueError(tr('Les clés privée et publique ne correspondent pas.'))
         return True, ""
     except Exception as exc:
-        return False, str(exc) if isinstance(exc, (ValueError, OSError)) else "Format de clé non pris en charge."
+        return False, str(exc) if isinstance(exc, (ValueError, OSError)) else tr('Format de clé non pris en charge.')
 
 
 def change_passphrase(name: str, old_passphrase: str, new_passphrase: str) -> tuple[bool, str]:
@@ -454,7 +455,7 @@ def change_passphrase(name: str, old_passphrase: str, new_passphrase: str) -> tu
         atomic_write(private, key_material.serialize_private(key, new_passphrase), private=True)
         return True, ""
     except Exception as exc:
-        return False, str(exc) if isinstance(exc, (ValueError, OSError)) else "Impossible de changer la passphrase."
+        return False, str(exc) if isinstance(exc, (ValueError, OSError)) else tr('Impossible de changer la passphrase.')
 
 
 def import_key(source: Path, name: str, passphrase: str = "") -> tuple[bool, str]:
@@ -471,19 +472,19 @@ def import_key(source: Path, name: str, passphrase: str = "") -> tuple[bool, str
                 text = companion.read_text(encoding="utf-8-sig").strip()
                 key_material.parse_public(text)
                 if text.split()[:2] != public.decode("ascii").split()[:2]:
-                    raise ValueError("Le .pub importé ne correspond pas à la clé privée.")
+                    raise ValueError(tr('Le .pub importé ne correspond pas à la clé privée.'))
                 public = text.encode("utf-8")
             _save_pair(name, raw, public)
         return True, ""
     except Exception as exc:
-        return False, str(exc) if isinstance(exc, (OSError, ValueError)) else "Format de clé non pris en charge."
+        return False, str(exc) if isinstance(exc, (OSError, ValueError)) else tr('Format de clé non pris en charge.')
 
 
 def export_key(name: str, destination: Path, private: bool = False) -> tuple[bool, str]:
     try:
         source = _key_paths(name)[0 if private else 1]
         if destination.resolve() == source.resolve():
-            raise ValueError("Choisissez un autre emplacement.")
+            raise ValueError(tr('Choisissez un autre emplacement.'))
         atomic_write(destination, source.read_bytes(), private=private, exclusive=True)
         return True, ""
     except (OSError, ValueError) as exc:
@@ -504,7 +505,7 @@ def agent_keys() -> tuple[str, str]:
         result = _run("ssh-add", ["-l"])
         if result.returncode not in (0, 1):
             return "", "SSH Agent indisponible. Activez le service Windows « OpenSSH Authentication Agent »."
-        return result.stdout.strip() or "Aucune clé chargée.", ""
+        return result.stdout.strip() or tr('Aucune clé chargée.'), ""
     except (OSError, ValueError) as exc:
         return "", str(exc)
 
@@ -513,7 +514,7 @@ def remove_from_agent(name: str) -> tuple[bool, str]:
     try:
         _, public = _key_paths(name)
         result = _run("ssh-add", ["-d", str(public)])
-        return result.returncode == 0, "" if result.returncode == 0 else "Impossible de retirer la clé de l'agent."
+        return result.returncode == 0, "" if result.returncode == 0 else tr("Impossible de retirer la clé de l'agent.")
     except (OSError, ValueError) as exc:
         return False, str(exc)
 
@@ -532,14 +533,14 @@ def _interactive(command: str, args: list[str]) -> None:
 def add_to_agent(name: str) -> None:
     private, _ = _key_paths(name)
     if not private.is_file():
-        raise ValueError("Clé privée manquante.")
+        raise ValueError(tr('Clé privée manquante.'))
     _interactive("ssh-add", [str(private)])
 
 
 def connect(name: str) -> None:
     entry = get_config_entry(name)
     if not entry:
-        raise ValueError("Configurez d'abord la connexion de cette clé.")
+        raise ValueError(tr("Configurez d'abord la connexion de cette clé."))
     _interactive("ssh", ["-F", str(SSH_CONFIG), "--", entry["alias"]])
 
 

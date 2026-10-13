@@ -5,16 +5,16 @@
   <p>A local SSH key manager for Windows, built for a quieter daily workflow.</p>
   <p>
     <a href="https://github.com/HarpieDev/SSHKeyManager/actions/workflows/ci.yml"><img src="https://github.com/HarpieDev/SSHKeyManager/actions/workflows/ci.yml/badge.svg" alt="Windows tests"></a>
-    <a href="https://github.com/HarpieDev/SSHKeyManager/releases/latest"><img src="https://img.shields.io/badge/version-1.1.0-619fff" alt="Version 1.1.0"></a>
+    <a href="https://github.com/HarpieDev/SSHKeyManager/releases/latest"><img src="https://img.shields.io/badge/version-1.2.0-619fff" alt="Version 1.2.0"></a>
     <img src="https://img.shields.io/badge/platform-Windows%20x64-232a35" alt="Windows x64">
     <img src="https://img.shields.io/badge/data-local%20only-26463a" alt="Local storage">
   </p>
   <p><a href="https://github.com/HarpieDev/SSHKeyManager/releases/latest">Download</a> · <a href="#getting-started">Getting started</a> · <a href="#development">Development</a> · <a href="CHANGELOG.md">Changelog</a></p>
 </div>
 
-![Harpie SSH key library](docs/screenshots/library.png)
+![Harpie SSH key library](docs/screenshots/library-en.png)
 
-Harpie brings your SSH identities, tags, connection settings, and recovery tools into one desktop workspace. No account, cloud sync, telemetry, or background network requests. The application interface is in French; this documentation is in English. This repository is maintained for personal use.
+Harpie brings your SSH identities, tags, connection settings, and recovery tools into one desktop workspace. No account, cloud sync, telemetry, or background network requests. The complete interface is available in **English and French**. Switch languages from the sidebar at any time; your preference is remembered, and your keys and unsaved tag drafts stay intact.
 
 ## What you can do
 
@@ -40,16 +40,18 @@ All screenshots use disposable demo identities, generated in an isolated directo
 
 ## Getting started
 
-1. Download `Harpie-1.1.0-windows-x64.zip` from the [latest release](https://github.com/HarpieDev/SSHKeyManager/releases/latest).
-2. Extract the archive and launch `Harpie.exe`. Python is included in the executable; no separate installation is needed.
+1. Download `Harpie-1.2.0-setup-x64.exe` from the [latest release](https://github.com/HarpieDev/SSHKeyManager/releases/latest).
+2. Run the installer, choose English or French, then open **Harpie** from the Windows Start menu. Installation is per user and does not require administrator rights.
 3. Create or import an identity. Install its **public** key on your server or GitHub account before connecting.
 
-Target platform: **Windows 10/11, x64**. Release builds are unsigned. OpenSSH Client is needed for connections and agent commands; key creation and local key management work without it. To use SSH Agent, enable the Windows **OpenSSH Authentication Agent** service. Agent passphrases are entered directly in its terminal.
+Prefer no installation? Download `Harpie-1.2.0-windows-x64.zip`, extract it, and launch `Harpie.exe`. Python is bundled in both formats. Uninstalling Harpie removes application files and shortcuts while preserving your SSH keys and preferences.
 
-To check a download, compare the ZIP's hash with `SHA256SUMS.txt` from the same release:
+Target platform: **Windows 10/11, x64**. The installer and application are currently unsigned. OpenSSH Client is needed for connections and agent commands; key creation and local key management work without it. To use SSH Agent, enable the Windows **OpenSSH Authentication Agent** service. Agent passphrases are entered directly in its terminal.
+
+To check a download, compare its hash with `SHA256SUMS.txt` from the same release:
 
 ```powershell
-Get-FileHash .\Harpie-1.1.0-windows-x64.zip -Algorithm SHA256
+Get-FileHash .\Harpie-1.2.0-setup-x64.exe -Algorithm SHA256
 ```
 
 ### Keyboard shortcuts
@@ -113,10 +115,10 @@ Do not set `HARPIE_HOME` for normal use. To regenerate UI screenshots with dispo
 ### Build a Windows release
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_release.ps1 -Python .venv\Scripts\python.exe
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_release.ps1 -Python .venv\Scripts\python.exe -WithInstaller
 ```
 
-The script runs tests, regenerates icons and Windows version metadata, builds the executable, runs its isolated startup diagnostic, and packages a ZIP with documentation and third-party licenses. Output is written to `dist\release`, including `SHA256SUMS.txt`.
+Install [Inno Setup 6](https://jrsoftware.org/isinfo.php) to build the installer. Omit `-WithInstaller` to build only the portable ZIP. The script runs tests, regenerates icons and Windows version metadata, builds the executable, verifies its isolated startup in both languages, and packages documentation and third-party licenses. Output is written to `dist\release`, including checksums for each download.
 
 The [release workflow](https://github.com/HarpieDev/SSHKeyManager/blob/main/.github/workflows/release.yml) repeats this process on a version tag and publishes the assets only after verification. See [CONTRIBUTING.md](CONTRIBUTING.md) for the release checklist.
 
@@ -126,6 +128,7 @@ The [release workflow](https://github.com/HarpieDev/SSHKeyManager/blob/main/.git
 core/          Key material, storage, permissions, metadata, SSH configuration
 ui/            Desktop workspace, dialogs, widgets, and visual tokens
 assets/        Harpie identity, SVG icons, and bundled Inter font
+installer/     Bilingual per-user Windows setup
 tests/         Isolated key-management and UI regression tests
 tools/         Build, packaging, version metadata, and screenshot utilities
 .github/       Windows CI, release automation, and issue templates

@@ -1,4 +1,5 @@
 """Écritures atomiques et permissions des fichiers locaux."""
+from core.i18n import tr
 import ctypes
 import os
 import tempfile
@@ -61,22 +62,22 @@ def protect_private(path: Path) -> None:
 
 def private_permission_warning(path: Path) -> str:
     if os.name != "nt":
-        return "Permissions trop ouvertes sur la clé privée." if path.stat().st_mode & 0o077 else ""
+        return tr('Permissions trop ouvertes sur la clé privée.') if path.stat().st_mode & 0o077 else ""
     adv, kernel, sid = _windows_security()
     adv.GetNamedSecurityInfoW.argtypes = [wintypes.LPWSTR, ctypes.c_int, wintypes.DWORD, wintypes.LPVOID, wintypes.LPVOID, ctypes.POINTER(wintypes.LPVOID), wintypes.LPVOID, ctypes.POINTER(wintypes.LPVOID)]
     adv.GetAce.argtypes = [wintypes.LPVOID, wintypes.DWORD, ctypes.POINTER(wintypes.LPVOID)]
     dacl, descriptor = wintypes.LPVOID(), wintypes.LPVOID()
     result = adv.GetNamedSecurityInfoW(str(path), 1, 4, None, None, ctypes.byref(dacl), None, ctypes.byref(descriptor))
     if result:
-        return "Permissions Windows non vérifiables."
+        return tr('Permissions Windows non vérifiables.')
     try:
         if not dacl:
-            return "Permissions trop ouvertes sur la clé privée."
+            return tr('Permissions trop ouvertes sur la clé privée.')
         count = ctypes.c_ushort.from_address(dacl.value + 4).value
         for i in range(count):
             ace = wintypes.LPVOID()
             if not adv.GetAce(dacl, i, ctypes.byref(ace)):
-                return "Permissions Windows non vérifiables."
+                return tr('Permissions Windows non vérifiables.')
             kind = ctypes.c_ubyte.from_address(ace.value).value
             flags = ctypes.c_ubyte.from_address(ace.value + 1).value
             if flags & 8:  # INHERIT_ONLY_ACE
@@ -84,13 +85,13 @@ def private_permission_warning(path: Path) -> str:
             if kind not in (0, 5):  # ACCESS_ALLOWED / ACCESS_ALLOWED_OBJECT
                 continue
             if kind == 5:
-                return "Permissions Windows spécifiques : vérification manuelle nécessaire."
+                return tr('Permissions Windows spécifiques : vérification manuelle nécessaire.')
             text = wintypes.LPWSTR()
             if not adv.ConvertSidToStringSidW(wintypes.LPVOID(ace.value + 8), ctypes.byref(text)):
-                return "Permissions Windows non vérifiables."
+                return tr('Permissions Windows non vérifiables.')
             try:
                 if text.value not in {sid, "S-1-5-18", "S-1-5-32-544"}:
-                    return "La clé privée est accessible à d'autres comptes Windows."
+                    return tr("La clé privée est accessible à d'autres comptes Windows.")
             finally:
                 kernel.LocalFree(ctypes.cast(text, wintypes.LPVOID))
         return ""
@@ -101,7 +102,7 @@ def private_permission_warning(path: Path) -> str:
 def atomic_write(path: Path, data: bytes, *, private: bool = False, exclusive: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.is_symlink():
-        raise ValueError("Un lien symbolique ne peut pas être modifié.")
+        raise ValueError(tr('Un lien symbolique ne peut pas être modifié.'))
     fd, temp_name = tempfile.mkstemp(prefix=".harpie-", dir=path.parent)
     temp = Path(temp_name)
     try:

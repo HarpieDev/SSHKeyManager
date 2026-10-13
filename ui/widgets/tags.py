@@ -1,3 +1,5 @@
+from core.i18n import tr
+from ui.language import set_translated, localized, add_translated_item
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
@@ -37,7 +39,7 @@ class ColorPalettePicker(QWidget):
             btn = QPushButton()
             btn.setFixedSize(26, 26)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setToolTip(color)
+            set_translated(btn, 'setToolTip', color)
             btn.clicked.connect(lambda checked=False, c=color: self._select(c))
             self._buttons[color] = btn
             grid.addWidget(btn, i // cols, i % cols)
@@ -98,7 +100,7 @@ class TagEditor(QWidget):
         existing_layout.setContentsMargins(12, 10, 12, 10)
         existing_layout.setSpacing(8)
 
-        existing_layout.addWidget(self._section_label("Tag existant"))
+        existing_layout.addWidget(self._section_label(tr('Tag existant')))
 
         row = QHBoxLayout()
         row.setSpacing(8)
@@ -107,7 +109,7 @@ class TagEditor(QWidget):
         self._combo.currentIndexChanged.connect(self._on_combo_changed)
         row.addWidget(self._combo, stretch=1)
 
-        apply_btn = QPushButton("Appliquer")
+        apply_btn = localized(QPushButton(), tr('Appliquer'))
         apply_btn.setObjectName("SecondaryBtn")
         apply_btn.setFixedHeight(36)
         apply_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -115,7 +117,7 @@ class TagEditor(QWidget):
         row.addWidget(apply_btn)
         existing_layout.addLayout(row)
 
-        self._current_preview = QLabel("Aucun tag")
+        self._current_preview = localized(QLabel(), tr('Aucun tag'))
         self._current_preview.setStyleSheet("color: #A5A5B1; font-size: 12px;")
         existing_layout.addWidget(self._current_preview)
         root.addWidget(existing)
@@ -129,18 +131,18 @@ class TagEditor(QWidget):
         create_layout.setContentsMargins(12, 10, 12, 10)
         create_layout.setSpacing(8)
 
-        create_layout.addWidget(self._section_label("Créer un nouveau tag"))
+        create_layout.addWidget(self._section_label(tr('Créer un nouveau tag')))
 
         self._new_name = QLineEdit()
-        self._new_name.setPlaceholderText("Nom du tag (ex. Test, Production…)")
+        set_translated(self._new_name, 'setPlaceholderText', tr('Nom du tag (ex. Test, Production…)'))
         self._new_name.setMinimumHeight(36)
         create_layout.addWidget(self._new_name)
 
-        create_layout.addWidget(self._section_label("Couleur"))
+        create_layout.addWidget(self._section_label(tr('Couleur')))
         self._palette = ColorPalettePicker()
         create_layout.addWidget(self._palette)
 
-        create_btn = QPushButton("Créer et appliquer")
+        create_btn = localized(QPushButton(), tr('Créer et appliquer'))
         create_btn.setObjectName("PrimaryBtn")
         create_btn.setMinimumHeight(36)
         create_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -153,7 +155,7 @@ class TagEditor(QWidget):
 
     @staticmethod
     def _section_label(text: str) -> QLabel:
-        label = QLabel(text)
+        label = localized(QLabel(), text)
         label.setStyleSheet("color: #BAB5C8; font-size: 12px; font-weight: 600; border: none;")
         return label
 
@@ -161,7 +163,7 @@ class TagEditor(QWidget):
         current = self._selected_id
         self._combo.blockSignals(True)
         self._combo.clear()
-        self._combo.addItem("— Aucun tag —", "")
+        add_translated_item(self._combo, tr('— Aucun tag —'), "")
         for tag in metadata_store.list_tags():
             self._combo.addItem(tag["label"], tag["id"])
         idx = self._combo.findData(current)
@@ -180,13 +182,13 @@ class TagEditor(QWidget):
     def _on_create(self) -> None:
         name = self._new_name.text().strip()
         if not name:
-            QMessageBox.warning(self.window(), "Tag", "Indiquez un nom pour le tag.")
+            QMessageBox.warning(self.window(), tr('Tag'), tr('Indiquez un nom pour le tag.'))
             return
         color = self._palette.selected_color()
         try:
             tag_id = metadata_store.create_tag(name, color)
         except (ValueError, OSError) as exc:
-            QMessageBox.warning(self.window(), "Tag", str(exc))
+            QMessageBox.warning(self.window(), tr('Tag'), str(exc))
             return
         self._new_name.clear()
         self._selected_id = tag_id
@@ -195,15 +197,15 @@ class TagEditor(QWidget):
 
     def _update_preview(self) -> None:
         if not self._selected_id:
-            self._current_preview.setText("Aucun tag sélectionné")
+            set_translated(self._current_preview, 'setText', tr('Aucun tag sélectionné'))
             self._current_preview.setStyleSheet("color: #A5A5B1; font-size: 12px;")
             return
         tag = metadata_store.get_tag(self._selected_id)
         if not tag:
-            self._current_preview.setText("Aucun tag sélectionné")
+            set_translated(self._current_preview, 'setText', tr('Aucun tag sélectionné'))
             return
         bg, fg, border = chip_colors(tag["color"])
-        self._current_preview.setText(tag["label"])
+        set_translated(self._current_preview, 'setText', tag["label"])
         self._current_preview.setStyleSheet(
             f"color: {fg}; background-color: {bg}; border: 1px solid {border}; "
             f"border-radius: 10px; padding: 4px 10px; font-weight: 600; font-size: 12px;"
@@ -232,7 +234,7 @@ class TagFilterBar(QWidget):
                 item.widget().deleteLater()
         self._buttons.clear()
 
-        all_btn = self._make_btn("Tous", "all", "#232A35", "#B8D6FF", "#3C5981")
+        all_btn = self._make_btn(tr('Tous'), "all", "#232A35", "#B8D6FF", "#3C5981")
         all_btn.setChecked(self._active == "all")
         self._layout.addWidget(all_btn)
         self._buttons["all"] = all_btn
@@ -252,7 +254,7 @@ class TagFilterBar(QWidget):
         self._layout.addStretch()
 
     def _make_btn(self, text: str, tag_id: str, bg: str, fg: str, border: str) -> QPushButton:
-        btn = QPushButton(text)
+        btn = localized(QPushButton(), text)
         btn.setFixedHeight(30)
         btn.setCheckable(True)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)

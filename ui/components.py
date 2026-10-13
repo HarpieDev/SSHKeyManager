@@ -1,4 +1,6 @@
 """Petits composants partagés par les écrans Harpie."""
+from core.i18n import tr
+from ui.language import set_translated, localized
 from functools import lru_cache
 from PySide6.QtCore import QByteArray, QSize, Qt
 from PySide6.QtGui import QIcon, QPainter, QPixmap
@@ -39,7 +41,7 @@ def icon(name: str, color: str = "#AEAEB2", size: int = 20) -> QIcon:
 
 
 def label(text: str, role: str = "AppSubtitle") -> QLabel:
-    widget = QLabel(text)
+    widget = localized(QLabel(), text)
     widget.setObjectName(role)
     widget.setTextFormat(Qt.TextFormat.PlainText)
     widget.setWordWrap(True)
@@ -47,7 +49,7 @@ def label(text: str, role: str = "AppSubtitle") -> QLabel:
 
 
 def button(text, callback, role="SecondaryBtn", symbol=None):
-    widget = QPushButton(text)
+    widget = localized(QPushButton(), text)
     widget.setObjectName(role)
     widget.setCursor(Qt.CursorShape.PointingHandCursor)
     widget.setMinimumHeight(42)
@@ -94,8 +96,8 @@ class SummaryCard(QFrame):
         self.set_count(0)
 
     def set_count(self, count: int) -> None:
-        self.value.setText(str(count))
-        self.setAccessibleName(f"{self._title} : {count}")
+        set_translated(self.value, 'setText', str(count))
+        set_translated(self, 'setAccessibleName', f"{tr(self._title)} : {count}")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -109,7 +111,7 @@ def field(title: str, control: QWidget) -> QWidget:
     layout.setSpacing(7)
     caption = label(title, "FieldLabel")
     caption.setBuddy(control)
-    control.setAccessibleName(title)
+    set_translated(control, 'setAccessibleName', title)
     layout.addWidget(caption)
     layout.addWidget(control)
     return widget

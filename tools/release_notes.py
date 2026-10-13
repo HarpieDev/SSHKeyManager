@@ -15,8 +15,9 @@ def main():
         raise ValueError(f'No changelog entry for {__version__}')
     print(f'# Harpie {__version__}\n')
     print(match.group(1).strip())
-    print(f'\n## Download\n\nExtract `Harpie-{__version__}-windows-x64.zip` and run `Harpie.exe`. No Python installation is required. Windows x64; application interface in French. The executable is unsigned.\n')
-    print('Verify the ZIP against `SHA256SUMS.txt`. The archive includes documentation and third-party license texts.\n')
+    print(f'\n## Download\n\nRun `Harpie-{__version__}-setup-x64.exe` to install Harpie, then open it from the Start menu. The installer and application support English and French. Installation is per user; no administrator rights or Python installation are required.\n')
+    print(f'For portable use, extract `Harpie-{__version__}-windows-x64.zip` and run `Harpie.exe`. Windows x64; downloads are currently unsigned.\n')
+    print('Verify either download against `SHA256SUMS.txt`. Both packages include documentation and third-party license texts. Uninstalling preserves SSH keys and preferences.\n')
     print('Your keys and metadata stay local and remain compatible with the previous version. Back up important identities independently.\n')
 
 
