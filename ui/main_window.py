@@ -1,3 +1,5 @@
+from core.i18n import tr, translate_message
+from ui.language import set_translated
 from pathlib import Path
 import webbrowser
 
@@ -38,10 +40,13 @@ from ui.tag_page import TagPage
 from ui.window_frame import IntegratedWindow
 from version import __version__
 from ui.tools_dialog import AgentDialog, TrashDialog
+from core.i18n import language
+from ui.language import change_language
+from ui.widgets.rounded_combo import RoundedComboBox
 
 
 class KeysTableModel(QAbstractTableModel):
-    HEADERS = ["Tag", "Nom", "Type", "Commentaire", "Empreinte", "Modifiée le"]
+    HEADERS = [tr('Tag'), tr('Nom'), "Type", tr('Commentaire'), tr('Empreinte'), tr('Modifiée le')]
 
     def __init__(self, keys: list[SshKey] | None = None):
         super().__init__()
@@ -55,7 +60,7 @@ class KeysTableModel(QAbstractTableModel):
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
-            return self.HEADERS[section]
+            return tr(self.HEADERS[section])
         return None
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
@@ -92,7 +97,7 @@ class KeysTableModel(QAbstractTableModel):
 
         if role == Qt.ItemDataRole.ToolTipRole:
             if key.warning:
-                return key.warning
+                return translate_message(key.warning)
             if col == 0 and key.tag_label:
                 return key.tag_label
 
@@ -139,7 +144,7 @@ class KeysFilterProxyModel(QSortFilterProxyModel):
 class MainWindow(BackgroundMixin, IntegratedWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Harpie SSH Key Manager")
+        set_translated(self, 'setWindowTitle', "Harpie SSH Key Manager")
         icon = QIcon(str(logo_path()))
         if not icon.isNull():
             self.setWindowIcon(icon)
@@ -179,30 +184,30 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         layout.setContentsMargins(32, 28, 32, 18)
         layout.setSpacing(18)
         context = QHBoxLayout()
-        breadcrumb = label("ESPACE PERSONNEL  /  BIBLIOTHÈQUE", "Eyebrow")
+        breadcrumb = label(tr('ESPACE PERSONNEL  /  BIBLIOTHÈQUE'), "Eyebrow")
         breadcrumb.setWordWrap(False)
         context.addWidget(breadcrumb)
         context.addStretch()
-        local_badge = label("●  Stockage local", "LocalBadge")
+        local_badge = label(tr('●  Stockage local'), "LocalBadge")
         local_badge.setFixedHeight(28)
         context.addWidget(local_badge)
         layout.addLayout(context)
         heading = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(5)
-        titles.addWidget(label("Vos clés. Votre espace.", "AppTitle"))
-        titles.addWidget(label("Créez, organisez et protégez vos identités SSH."))
+        titles.addWidget(label(tr('Vos clés. Votre espace.'), "AppTitle"))
+        titles.addWidget(label(tr('Créez, organisez et protégez vos identités SSH.')))
         heading.addLayout(titles, 1)
-        heading.addWidget(button("Nouvelle clé", self._on_new_key, "PrimaryBtn", "plus"))
+        heading.addWidget(button(tr('Nouvelle clé'), self._on_new_key, "PrimaryBtn", "plus"))
         layout.addLayout(heading)
 
         self._summary_strip = QWidget()
         summary_layout = QHBoxLayout(self._summary_strip)
         summary_layout.setContentsMargins(0, 0, 0, 0)
         summary_layout.setSpacing(14)
-        self._summary_total = SummaryCard("Identités SSH", "Bibliothèque", "key", "blue")
-        self._summary_protected = SummaryCard("Avec passphrase", "Protection", "lock", "purple")
-        self._summary_warnings = SummaryCard("À vérifier", "Diagnostics", "alert", "orange")
+        self._summary_total = SummaryCard(tr('Identités SSH'), tr('Bibliothèque'), "key", "blue")
+        self._summary_protected = SummaryCard(tr('Avec passphrase'), tr('Protection'), "lock", "purple")
+        self._summary_warnings = SummaryCard(tr('À vérifier'), "Diagnostics", "alert", "orange")
         for summary in (self._summary_total, self._summary_protected, self._summary_warnings):
             summary_layout.addWidget(summary, 1)
         layout.addWidget(self._summary_strip)
@@ -219,8 +224,8 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._search = QLineEdit()
         self._search.setObjectName("SearchField")
         self._search.setMinimumHeight(46)
-        self._search.setPlaceholderText("Rechercher un nom, un tag, une empreinte…")
-        self._search.setAccessibleName("Rechercher dans les clés SSH")
+        set_translated(self._search, 'setPlaceholderText', tr('Rechercher un nom, un tag, une empreinte…'))
+        set_translated(self._search, 'setAccessibleName', tr('Rechercher dans les clés SSH'))
         self._search.addAction(icon("search"), QLineEdit.ActionPosition.LeadingPosition)
         self._search.setClearButtonEnabled(True)
         self._search.textChanged.connect(self._keys_proxy.setFilterFixedString)
@@ -230,11 +235,11 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         tool_layout = QHBoxLayout(tools)
         tool_layout.setContentsMargins(4, 3, 4, 3)
         tool_layout.setSpacing(2)
-        tool_layout.addWidget(button("Importer", self._on_import, "ToolbarBtn", "import"))
+        tool_layout.addWidget(button(tr('Importer'), self._on_import, "ToolbarBtn", "import"))
         self._refresh_btn = button("", self.refresh_keys, "ToolbarBtn", "refresh")
         self._refresh_btn.setFixedSize(40, 40)
-        self._refresh_btn.setToolTip("Actualiser les clés · F5")
-        self._refresh_btn.setAccessibleName("Actualiser les clés")
+        set_translated(self._refresh_btn, 'setToolTip', tr('Actualiser les clés · F5'))
+        set_translated(self._refresh_btn, 'setAccessibleName', tr('Actualiser les clés'))
         tool_layout.addWidget(self._refresh_btn)
         toolbar.addWidget(tools)
         layout.addLayout(toolbar)
@@ -248,7 +253,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         card_layout.setSpacing(0)
         list_header = QHBoxLayout()
         list_header.setContentsMargins(8, 12, 8, 8)
-        self._list_title = label("Toutes les clés", "SectionTitle")
+        self._list_title = label(tr('Toutes les clés'), "SectionTitle")
         list_header.addWidget(self._list_title)
         list_header.addStretch()
         self._stat_badge = label("0", "StatBadge")
@@ -276,7 +281,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._keys_table.setMouseTracking(True)
         self._keys_table.verticalHeader().hide()
         self._keys_table.verticalHeader().setDefaultSectionSize(78)
-        self._keys_table.setAccessibleName("Bibliothèque de clés SSH")
+        set_translated(self._keys_table, 'setAccessibleName', tr('Bibliothèque de clés SSH'))
         self._keys_table.setColumnHidden(3, True)
         self._keys_table.setColumnHidden(4, True)
         header = self._keys_table.horizontalHeader()
@@ -300,23 +305,23 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         symbol = QLabel()
         symbol.setPixmap(icon("key", "#6DBBEE", 48).pixmap(48, 48))
         empty_layout.addWidget(symbol, alignment=Qt.AlignmentFlag.AlignHCenter)
-        self._empty_title = label("Votre espace est prêt", "SectionTitle")
+        self._empty_title = label(tr('Votre espace est prêt'), "SectionTitle")
         self._empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._empty_hint = label("Créez ou importez votre première clé SSH.")
+        self._empty_hint = label(tr('Créez ou importez votre première clé SSH.'))
         self._empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(self._empty_title)
         empty_layout.addWidget(self._empty_hint)
         self._empty_actions = QWidget()
         empty_actions = QHBoxLayout(self._empty_actions)
         empty_actions.addStretch()
-        empty_actions.addWidget(button("Créer une clé", self._on_new_key, "PrimaryBtn", "plus"))
-        empty_actions.addWidget(button("Importer", self._on_import, symbol="import"))
+        empty_actions.addWidget(button(tr('Créer une clé'), self._on_new_key, "PrimaryBtn", "plus"))
+        empty_actions.addWidget(button(tr('Importer'), self._on_import, symbol="import"))
         empty_actions.addStretch()
         empty_layout.addWidget(self._empty_actions)
         empty_layout.addStretch()
         self._list_stack.addWidget(empty)
         card_layout.addWidget(self._list_stack, 1)
-        foot = label("Double-clic pour ouvrir les détails  ·  Entrée pour gérer la sélection", "FooterNote")
+        foot = label(tr('Double-clic pour ouvrir les détails  ·  Entrée pour gérer la sélection'), "FooterNote")
         foot.setContentsMargins(8, 10, 8, 0)
         card_layout.addWidget(foot)
         body.addWidget(card, 1)
@@ -326,18 +331,18 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         compact = QHBoxLayout()
         compact.addStretch()
         compact.addWidget(self._compact_copy)
-        self._compact_detail = button("Gérer cette clé", self._open_selected, symbol="arrow")
+        self._compact_detail = button(tr('Gérer cette clé'), self._open_selected, symbol="arrow")
         compact.addWidget(self._compact_detail)
         self._compact_actions = QWidget()
         self._compact_actions.setLayout(compact)
         layout.addWidget(self._compact_actions)
         self._compact_actions.hide()
         footer = QHBoxLayout()
-        local_note = label("Harpie  ·  Vos clés restent sur cet ordinateur", "FooterNote")
+        local_note = label(tr('Harpie  ·  Vos clés restent sur cet ordinateur'), "FooterNote")
         local_note.setWordWrap(False)
         footer.addWidget(local_note)
         footer.addStretch()
-        shortcuts = label("Ctrl + N  Nouvelle clé     ·     Ctrl + F  Rechercher", "FooterNote")
+        shortcuts = label(tr('Ctrl + N  Nouvelle clé     ·     Ctrl + F  Rechercher'), "FooterNote")
         shortcuts.setWordWrap(False)
         footer.addWidget(shortcuts)
         layout.addLayout(footer)
@@ -368,9 +373,9 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         layout.addLayout(brand)
         layout.addWidget(label("SSH KEY MANAGER", "Eyebrow"))
         layout.addSpacing(32)
-        layout.addWidget(label("BIBLIOTHÈQUE", "SidebarSection"))
-        self._all_nav = button("Toutes les clés", lambda: self._set_view(False), symbol="grid")
-        self._alert_nav = button("À vérifier", lambda: self._set_view(True), symbol="alert")
+        layout.addWidget(label(tr('BIBLIOTHÈQUE'), "SidebarSection"))
+        self._all_nav = button(tr('Toutes les clés'), lambda: self._set_view(False), symbol="grid")
+        self._alert_nav = button(tr('À vérifier'), lambda: self._set_view(True), symbol="alert")
         self._all_nav.setIcon(icon("grid", "#2197FE", 18))
         self._alert_nav.setIcon(icon("alert", "#E9A76C", 18))
         self._alert_nav.setObjectName("WarningNav")
@@ -379,16 +384,16 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
             layout.addWidget(item)
         self._all_nav.setChecked(True)
         layout.addSpacing(26)
-        layout.addWidget(label("OUTILS", "SidebarSection"))
+        layout.addWidget(label(tr('OUTILS'), "SidebarSection"))
         for title, handler, symbol, color in (
             ("SSH Agent", self._on_agent, "terminal", "#32D2F0"),
-            ("Corbeille", self._on_restore, "trash", "#EF89AD"),
-            ("Tags", self._on_manage_tags, "tag", "#B88AE9"),
-            ("Dossier .ssh", self._on_open_ssh_folder, "folder", "#6DBBEE"),
+            (tr('Corbeille'), self._on_restore, "trash", "#EF89AD"),
+            (tr('Tags'), self._on_manage_tags, "tag", "#B88AE9"),
+            (tr("Dossier .ssh"), self._on_open_ssh_folder, "folder", "#6DBBEE"),
         ):
             item = button(title, handler)
             item.setIcon(icon(symbol, color, 18))
-            if title == "Tags":
+            if title == tr('Tags'):
                 self._tags_nav = item
                 item.setCheckable(True)
                 item.setObjectName("TagsNav")
@@ -397,18 +402,40 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         github = button("GitHub SSH Keys", lambda: webbrowser.open("https://github.com/settings/keys"))
         github.setIcon(icon("arrow", "#AEAEB2", 17))
         layout.addWidget(github)
+        self._language_combo = RoundedComboBox()
+        self._language_combo.addItem("Français", "fr")
+        self._language_combo.addItem("English", "en")
+        self._language_combo.setCurrentIndex(self._language_combo.findData(language()))
+        self._language_combo.setAccessibleName("Français / English")
+        self._language_combo.setMinimumHeight(36)
+        self._language_combo.currentIndexChanged.connect(self._change_language)
+        layout.addWidget(self._language_combo)
         layout.addSpacing(12)
         local = QFrame()
         local.setObjectName("LocalCard")
         local.setFixedHeight(94)
+        self._sidebar_note = local
         local_layout = QVBoxLayout(local)
         local_layout.setContentsMargins(14, 14, 14, 14)
         local_layout.setSpacing(6)
-        local_layout.addWidget(label("●  Espace local", "FieldLabel"))
-        local_layout.addWidget(label("Sans compte. Sans cloud.", "FooterNote"))
+        local_layout.addWidget(label(tr('●  Espace local'), "FieldLabel"))
+        local_layout.addWidget(label(tr('Sans compte. Sans cloud.'), "FooterNote"))
         local_layout.addWidget(label(f"Harpie  v{__version__}", "FooterNote"))
         layout.addWidget(local)
         return sidebar
+
+    def _change_language(self, *_):
+        selected = self._language_combo.currentData()
+        if selected == language():
+            return
+        change_language(selected)
+        self._keys_model.headerDataChanged.emit(Qt.Orientation.Horizontal, 0, 5)
+        self._keys_table.viewport().update()
+        self._sync_list()
+        if self._tag_page:
+            self._tag_page._list.viewport().update()
+        self._title_bar.update_state()
+        self.statusBar().clearMessage()
 
     def _build_preview(self):
         card = QFrame()
@@ -425,7 +452,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         outer.setContentsMargins(0, 0, 4, 0)
         outer.setSpacing(10)
         caption = QHBoxLayout()
-        heading = label("CLÉ SÉLECTIONNÉE", "Eyebrow")
+        heading = label(tr('CLÉ SÉLECTIONNÉE'), "Eyebrow")
         heading.setWordWrap(False)
         caption.addWidget(heading)
         caption.addStretch()
@@ -443,16 +470,16 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         symbol.setFixedSize(40, 40)
         symbol.setPixmap(icon("key", "#9CC6FF", 24).pixmap(24, 24))
         identity.addWidget(symbol)
-        self._preview_name = label("Sélectionnez une clé", "PreviewTitle")
+        self._preview_name = label(tr('Sélectionnez une clé'), "PreviewTitle")
         self._preview_name.setMinimumWidth(0)
         identity.addWidget(self._preview_name)
-        self._preview_state = label("Ses informations apparaîtront ici.", "PreviewState")
+        self._preview_state = label(tr('Ses informations apparaîtront ici.'), "PreviewState")
         identity.addWidget(self._preview_state)
         outer.addWidget(hero)
         facts = QHBoxLayout()
         facts.setSpacing(12)
         self._preview_values = {}
-        for title, caption in (("TYPE", "Algorithme"), ("PROTECTION", "Protection"), ("EMPREINTE", "Empreinte SHA256"), ("MODIFIÉE LE", "Dernière modification")):
+        for title, caption in (("TYPE", tr('Algorithme')), ("PROTECTION", tr('Protection')), ("EMPREINTE", tr('Empreinte SHA256')), ("MODIFIÉE LE", tr('Dernière modification'))):
             group = QVBoxLayout()
             group.setSpacing(6)
             group.addWidget(label(caption, "DetailCaption"))
@@ -472,12 +499,12 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         outer.addStretch()
         scroll.setWidget(details)
         layout.addWidget(scroll, 1)
-        self._copy_btn = button("Copier la clé publique", self._on_copy_public, "TintedBtn", "copy")
-        self._copy_btn.setToolTip("Copier uniquement la clé publique. Le fichier privé reste sur cet ordinateur.")
-        self._detail_btn = button("Gérer cette clé", self._open_selected, "PrimaryBtn", "arrow")
+        self._copy_btn = button(tr('Copier la clé publique'), self._on_copy_public, "TintedBtn", "copy")
+        set_translated(self._copy_btn, 'setToolTip', tr('Copier uniquement la clé publique. Le fichier privé reste sur cet ordinateur.'))
+        self._detail_btn = button(tr('Gérer cette clé'), self._open_selected, "PrimaryBtn", "arrow")
         layout.addWidget(self._copy_btn)
         layout.addWidget(self._detail_btn)
-        self._compact_copy = button("Copier publique", self._on_copy_public, symbol="copy")
+        self._compact_copy = button(tr('Copier publique'), self._on_copy_public, symbol="copy")
         return card
 
     def _set_view(self, warnings_only):
@@ -485,13 +512,13 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._tags_nav.setChecked(False)
         self._all_nav.setChecked(not warnings_only)
         self._alert_nav.setChecked(warnings_only)
-        self._list_title.setText("À vérifier" if warnings_only else "Toutes les clés")
+        set_translated(self._list_title, 'setText', tr('À vérifier') if warnings_only else tr('Toutes les clés'))
         self._keys_proxy.set_warnings_only(warnings_only)
         self._sync_list()
 
     def _sync_list(self, *args):
         count = self._keys_proxy.rowCount()
-        self._stat_badge.setText(str(count))
+        set_translated(self._stat_badge, 'setText', str(count))
         self._list_stack.setCurrentIndex(0 if count else 1)
         total = self._keys_model.rowCount()
         keys = self._keys_model._keys
@@ -499,8 +526,8 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._summary_protected.set_count(sum(bool(key.has_private and key.encrypted) for key in keys))
         self._summary_warnings.set_count(sum(bool(key.warning) for key in keys))
         self._empty_actions.setVisible(not total)
-        self._empty_title.setText("Aucun résultat" if total else "Votre espace est prêt")
-        self._empty_hint.setText("Essayez une autre recherche ou un autre filtre." if total else "Créez ou importez votre première clé SSH.")
+        set_translated(self._empty_title, 'setText', tr('Aucun résultat') if total else tr('Votre espace est prêt'))
+        set_translated(self._empty_hint, 'setText', tr('Essayez une autre recherche ou un autre filtre.') if total else tr('Créez ou importez votre première clé SSH.'))
         if count and self._selected_key() is None:
             self._keys_table.selectRow(0)
         self._update_preview()
@@ -514,17 +541,17 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._compact_copy.setEnabled(bool(key and key.public_key_text))
         if hasattr(self, "_compact_detail"):
             self._compact_detail.setEnabled(key is not None)
-        self._preview_name.setText(key.name if key else "Sélectionnez une clé")
-        self._preview_name.setToolTip(key.name if key else "")
-        self._preview_state.setText((key.warning or key.tag_label or "Clé personnelle") if key else "Ses informations apparaîtront ici.")
+        set_translated(self._preview_name, 'setText', key.name if key else tr('Sélectionnez une clé'))
+        set_translated(self._preview_name, 'setToolTip', key.name if key else "")
+        set_translated(self._preview_state, 'setText', (translate_message(key.warning) if key.warning else key.tag_label or tr('Clé personnelle')) if key else tr('Ses informations apparaîtront ici.'))
         self._preview_state.setStyleSheet("color: #F0B779; font-size: 12px;" if key and key.warning else "color: #B6C8E3; font-size: 12px;")
-        values = (key_type_name(key.key_type), "Passphrase" if key.encrypted else "Sans passphrase" if key.has_private else "Publique seule", key.fingerprint_sha256 or "—", key.created_at.strftime("%d/%m/%Y · %H:%M")) if key else ("—",) * 4
+        values = (key_type_name(key.key_type), tr('Passphrase') if key.encrypted else tr('Sans passphrase') if key.has_private else tr('Publique seule'), key.fingerprint_sha256 or "—", key.created_at.strftime("%d/%m/%Y · %H:%M")) if key else ("—",) * 4
         for widget, value in zip(self._preview_values.values(), values):
-            widget.setToolTip(value)
+            set_translated(widget, 'setToolTip', value)
             if widget is self._preview_values["EMPREINTE"] and key:
                 import textwrap
                 value = "\n".join(textwrap.wrap(value, 27))
-            widget.setText(value)
+            set_translated(widget, 'setText', value)
 
     def _open_selected(self):
         indexes = self._keys_table.selectionModel().selectedRows()
@@ -540,6 +567,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if hasattr(self, "_preview_card"):
+            self._sidebar_note.setVisible(event.size().height() >= 720)
             self._preview_card.setVisible(event.size().width() >= 1150 and event.size().height() >= 760)
             self._compact_actions.setVisible(event.size().width() < 1150 or event.size().height() < 760)
             compact_height = event.size().height() < 700
@@ -569,7 +597,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
     def refresh_keys(self) -> None:
         selected = self._selected_key()
         selected_name = selected.name if selected else ""
-        self.statusBar().showMessage("Lecture des clés…")
+        self.statusBar().showMessage(tr('Lecture des clés…'))
         def completed(keys):
             self._keys_model.update_keys(keys)
             if self._tag_page:
@@ -577,14 +605,14 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
             self._tag_filter.rebuild()
             count = len(keys)
             self._sync_list()
-            self._alert_nav.setText(f"À vérifier ({sum(bool(k.warning) for k in keys)})" if any(k.warning for k in keys) else "À vérifier")
+            set_translated(self._alert_nav, 'setText', tr('À vérifier ({p0})', p0=sum(bool(k.warning) for k in keys)) if any(k.warning for k in keys) else tr('À vérifier'))
             for row in range(self._keys_proxy.rowCount()):
                 index = self._keys_proxy.index(row, 1)
                 if index.data() == selected_name:
                     self._keys_table.selectRow(row)
                     break
             alerts = sum(bool(key.warning) for key in keys)
-            message = f"{count} clés · {alerts} à vérifier" if alerts else ("Aucune clé. Créez ou importez votre première clé." if not count else "Liste actualisée")
+            message = tr('{p0} clés · {p1} à vérifier', p0=count, p1=alerts) if alerts else (tr('Aucune clé. Créez ou importez votre première clé.') if not count else tr('Liste actualisée'))
             if metadata_store.LAST_WARNING:
                 message += " · " + metadata_store.LAST_WARNING
                 metadata_store.LAST_WARNING = ""
@@ -594,25 +622,25 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
     def _on_new_key(self) -> None:
         if KeyCreateDialog(self).exec() == QDialog.DialogCode.Accepted:
             self.refresh_keys()
-            self.statusBar().showMessage("Clé créée avec succès", 3000)
+            self.statusBar().showMessage(tr('Clé créée avec succès'), 3000)
 
     def _on_open_ssh_folder(self) -> None:
         try:
             ssh_manager.open_ssh_folder()
         except OSError as exc:
-            QMessageBox.critical(self, "Erreur", f"Impossible d'ouvrir le dossier : {exc}")
+            QMessageBox.critical(self, tr('Erreur'), tr("Impossible d'ouvrir le dossier : {p0}", p0=exc))
 
     def _on_copy_public(self) -> None:
         key = self._selected_key()
         if not key:
-            self.statusBar().showMessage("Sélectionnez une clé d'abord", 2500)
+            self.statusBar().showMessage(tr("Sélectionnez une clé d'abord"), 2500)
             return
         text, err = ssh_manager.read_public_key(key.name)
         if err:
-            QMessageBox.warning(self, "Erreur", err)
+            QMessageBox.warning(self, tr('Erreur'), err)
             return
-        QGuiApplication.clipboard().setText(text)
-        self.statusBar().showMessage(f"Clé publique « {key.name} » copiée", 3000)
+        set_translated(QGuiApplication.clipboard(), 'setText', text)
+        self.statusBar().showMessage(tr('Clé publique « {p0} » copiée', p0=key.name), 3000)
 
     def _on_key_double_click(self, index) -> None:
         source_index = self._keys_proxy.mapToSource(index)
@@ -624,10 +652,10 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
             self.refresh_keys()
 
     def _on_import(self):
-        source, _ = QFileDialog.getOpenFileName(self, "Importer une clé privée OpenSSH ou PEM", str(ssh_manager.SSH_DIR), "Tous les fichiers (*)")
+        source, _ = QFileDialog.getOpenFileName(self, tr('Importer une clé privée OpenSSH ou PEM'), str(ssh_manager.SSH_DIR), tr('Tous les fichiers (*)'))
         if not source:
             return
-        name, accepted = QInputDialog.getText(self, "Nom de la clé", "Nom local", text=Path(source).stem.replace(".", "_"))
+        name, accepted = QInputDialog.getText(self, tr('Nom de la clé'), tr('Nom local'), text=Path(source).stem.replace(".", "_"))
         if not accepted:
             return
         def completed(result):
@@ -635,11 +663,11 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
             if ok:
                 self.refresh_keys()
             elif "passphrase" in error.lower():
-                password, accepted = QInputDialog.getText(self, "Clé chiffrée", "Passphrase de la clé importée", QLineEdit.EchoMode.Password)
+                password, accepted = QInputDialog.getText(self, tr('Clé chiffrée'), tr('Passphrase de la clé importée'), QLineEdit.EchoMode.Password)
                 if accepted:
                     self.run_task(lambda: ssh_manager.import_key(Path(source), name.strip(), password), completed)
             else:
-                QMessageBox.warning(self, "Import impossible", error)
+                QMessageBox.warning(self, tr('Import impossible'), error)
         self.run_task(lambda: ssh_manager.import_key(Path(source), name.strip()), completed)
 
     def _on_restore(self):
@@ -653,7 +681,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         if ok:
             self.refresh_keys()
         else:
-            QMessageBox.warning(self, "Opération impossible", error)
+            QMessageBox.warning(self, tr('Opération impossible'), error)
 
     def _on_agent(self):
         def completed(result):
@@ -671,7 +699,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
                 self._tag_page.refresh()
             self._tag_page.set_keys(self._keys_model._keys)
         except (OSError, ValueError) as exc:
-            QMessageBox.warning(self, "Tags", str(exc))
+            QMessageBox.warning(self, tr('Tags'), str(exc))
             self._tags_nav.setChecked(False)
             return
         self._pages.setCurrentWidget(self._tag_page)

@@ -21,10 +21,10 @@ jobs:
       PYTHONUTF8: '1'
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
           cache: pip
@@ -36,13 +36,17 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Test, build, diagnose, and package
         shell: pwsh
-        run: ./tools/build_release.ps1 -ExpectedTag $env:GITHUB_REF_NAME
+        run: ./tools/build_release.ps1 -ExpectedTag $env:GITHUB_REF_NAME -WithInstaller
+      - name: Verify English and French installation and uninstallation
+        shell: pwsh
+        run: ./tools/test_installer.ps1
       - name: Save verified build artifacts
         uses: actions/upload-artifact@v7
         with:
           name: Harpie-${{ github.ref_name }}-windows-x64
           path: |
             dist/release/*.zip
+            dist/release/*-setup-x64.exe
             dist/release/SHA256SUMS.txt
             dist/release/RELEASE_NOTES.md
           if-no-files-found: error
@@ -53,5 +57,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $archive = (Get-ChildItem -LiteralPath dist/release -Filter '*.zip').FullName
-          gh release create $env:GITHUB_REF_NAME $archive dist/release/SHA256SUMS.txt --verify-tag --title "Harpie $env:GITHUB_REF_NAME" --notes-file dist/release/RELEASE_NOTES.md
+          $installer = (Get-ChildItem -LiteralPath dist/release -Filter '*-setup-x64.exe').FullName
+          $assets = @($archive, $installer, 'dist/release/SHA256SUMS.txt')
+          gh release create $env:GITHUB_REF_NAME @assets --verify-tag --title "Harpie $env:GITHUB_REF_NAME" --notes-file dist/release/RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }

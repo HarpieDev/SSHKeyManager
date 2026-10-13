@@ -353,6 +353,75 @@ class UiTests(IsolatedTest):
         assert configure_appearance(cls.app), "La police Inter intégrée doit être chargée."
         cls.app.setStyleSheet(APP_STYLESHEET)
 
+    def test_live_language_switch_preserves_keys_filters_drafts_and_user_text(self):
+        from PySide6.QtCore import QSettings, Qt
+        from core.i18n import tr, translate_message
+        from ui.main_window import MainWindow
+        from ui.key_create_dialog import KeyCreateDialog
+        from ui.language import change_language, initialize_language
+        QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+        QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.UserScope, str(self.root))
+        change_language('fr', persist=False)
+        self.create('alpha')
+        private_before = (s.SSH_DIR / 'alpha').read_bytes()
+        tag = m.create_tag('Fermer', '#2197FE')
+        m.set_key_tag('alpha', tag)
+        window = MainWindow()
+        try:
+            deadline = time.monotonic() + 10
+            while window._task and time.monotonic() < deadline:
+                self.app.processEvents()
+                time.sleep(.01)
+            self.assertIsNone(window._task)
+            window._search.setText('alpha')
+            window._on_tag_filter(tag)
+            window._on_manage_tags()
+            page = window._tag_page
+            page._name.setText('Brouillon conservé')
+            window._language_combo.setCurrentIndex(window._language_combo.findData('en'))
+            self.app.processEvents()
+            self.assertEqual(window._all_nav.text(), 'All keys')
+            self.assertEqual(window._tag_filter._buttons['all'].text(), 'All')
+            self.assertEqual(window._keys_model.headerData(1, Qt.Orientation.Horizontal), 'Name')
+            self.assertEqual(window._title_bar.maximize.accessibleName(), 'Maximize')
+            self.assertEqual(window._search.text(), 'alpha')
+            self.assertEqual(window._keys_proxy.rowCount(), 1)
+            self.assertEqual(window._selected_key().name, 'alpha')
+            self.assertEqual(page._name.text(), 'Brouillon conservé')
+            self.assertEqual(window._tag_filter._buttons[tag].text(), 'Fermer')
+            self.assertEqual(QSettings().value('ui/language'), 'en')
+            self.assertEqual(translate_message('Clé privée manquante.'), 'Private key missing.')
+            create = KeyCreateDialog(window)
+            try:
+                self.assertEqual(create.windowTitle(), 'New SSH key')
+                self.assertEqual(create._name.placeholderText(), 'e.g. production_server')
+                self.assertEqual(create._tag_widget._combo.itemText(0), '— No tag —')
+            finally:
+                create.deleteLater()
+            self.assertIn('Use 1 to 100', s.validate_key_name('../invalid')[1])
+            initialize_language()
+            self.assertEqual(tr('Fermer'), 'Close')
+            window._language_combo.setCurrentIndex(window._language_combo.findData('fr'))
+            self.assertEqual(window._all_nav.text(), 'Toutes les clés')
+            self.assertEqual(window._tag_filter._buttons['all'].text(), 'Tous')
+            self.assertEqual(page._name.text(), 'Brouillon conservé')
+            self.assertEqual((s.SSH_DIR / 'alpha').read_bytes(), private_before)
+            self.assertEqual(m.get_key_tag('alpha')[1], 'Fermer')
+        finally:
+            change_language('fr', persist=False)
+            window.close()
+            window.deleteLater()
+            self.app.processEvents()
+
+    def test_translation_catalog_preserves_template_parameters(self):
+        from string import Formatter
+        from core.i18n import ENGLISH
+        formatter = Formatter()
+        for source, target in ENGLISH.items():
+            source_fields = {field for _, field, _, _ in formatter.parse(source) if field is not None}
+            target_fields = {field for _, field, _, _ in formatter.parse(target) if field is not None}
+            self.assertEqual(source_fields, target_fields, source)
+
     def test_trash_dialog_restores_identity_and_handles_empty_state(self):
         from PySide6.QtWidgets import QDialog
         from ui.tools_dialog import TrashDialog

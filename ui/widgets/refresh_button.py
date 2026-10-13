@@ -1,3 +1,4 @@
+from ui.language import set_translated
 from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
@@ -14,7 +15,7 @@ class RefreshButton(QPushButton):
         super().__init__(parent)
         self.setObjectName("RefreshBtn")
         self.setFixedSize(40, 40)
-        self.setToolTip("Actualiser")
+        set_translated(self, 'setToolTip', "Actualiser")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         self._rotation = 0.0
