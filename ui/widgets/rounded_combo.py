@@ -1,4 +1,6 @@
 """Liste de sélection arrondie, y compris les coins de la fenêtre Windows."""
+from core.i18n import tr
+from ui.language import set_translated
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QComboBox, QFrame, QListWidget, QListWidgetItem, QVBoxLayout
 
@@ -17,7 +19,7 @@ class ComboPopup(QFrame):
         inner.setContentsMargins(8, 8, 8, 8)
         self.list = QListWidget()
         self.list.setObjectName('ComboPopupList')
-        self.list.setAccessibleName('Sélection du tag')
+        set_translated(self.list, 'setAccessibleName', tr('Sélection du tag'))
         self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list.setMouseTracking(True)
         self.list.itemClicked.connect(self._choose)
@@ -30,7 +32,7 @@ class ComboPopup(QFrame):
         for row in range(self.owner.count()):
             item = QListWidgetItem(self.owner.itemIcon(row), self.owner.itemText(row))
             item.setSizeHint(QSize(150, 40))
-            item.setToolTip(self.owner.itemText(row))
+            set_translated(item, 'setToolTip', self.owner.itemText(row))
             self.list.addItem(item)
         self.list.setCurrentRow(self.owner.currentIndex())
 

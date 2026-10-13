@@ -1,4 +1,6 @@
 """Fenêtre intégrée au design, avec déplacement et redimensionnement Windows."""
+from core.i18n import tr
+from ui.language import set_translated
 import ctypes
 from ctypes import wintypes
 import sys
@@ -66,7 +68,7 @@ class WindowTitleBar(QWidget):
         self.owner = owner
         self.setObjectName('WindowTitleBar')
         self.setFixedHeight(self.HEIGHT)
-        self.setAccessibleName('Contrôles de la fenêtre Harpie')
+        set_translated(self, 'setAccessibleName', tr('Contrôles de la fenêtre Harpie'))
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 4, 8, 4)
         layout.setSpacing(2)
@@ -74,17 +76,17 @@ class WindowTitleBar(QWidget):
         self.minimize = WindowControl('minimize', owner.showMinimized, self)
         self.maximize = WindowControl('maximize', owner.toggle_maximized, self)
         self.close_button = WindowControl('close', owner.close, self)
-        for control, name in ((self.minimize, 'Réduire'), (self.maximize, 'Agrandir'),
-                              (self.close_button, 'Fermer')):
-            control.setAccessibleName(name)
-            control.setToolTip(name)
+        for control, name in ((self.minimize, tr('Réduire')), (self.maximize, tr('Agrandir')),
+                              (self.close_button, tr('Fermer'))):
+            set_translated(control, 'setAccessibleName', name)
+            set_translated(control, 'setToolTip', name)
             layout.addWidget(control)
 
     def update_state(self):
         self.maximize.restored = self.owner.isMaximized()
-        text = 'Restaurer' if self.maximize.restored else 'Agrandir'
-        self.maximize.setToolTip(text)
-        self.maximize.setAccessibleName(text)
+        text = tr('Restaurer') if self.maximize.restored else tr('Agrandir')
+        set_translated(self.maximize, 'setToolTip', text)
+        set_translated(self.maximize, 'setAccessibleName', text)
         self.maximize.update()
 
     def mousePressEvent(self, event):

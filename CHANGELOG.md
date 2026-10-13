@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.2.0] — 2026-10-13
+
+### Added
+
+- Complete English and French interfaces in a single application, with a live language selector and a remembered preference.
+- Automatic first-launch language selection from the Windows locale, with English as the fallback.
+- Localized dialogs, key diagnostics, accessibility labels, native Qt buttons, and tag management without translating user names or comments.
+- Bilingual per-user Windows installer with Start menu shortcut, optional desktop shortcut, and an uninstaller that preserves SSH identities and settings.
+- Installer and portable ZIP assets with individual SHA256 checksums.
+- CI verification of English and French installation, installed application startup, uninstallation, and preservation of user data.
+
+### Changed
+
+- Prepared the application and documentation for distribution to other Windows users.
+- Added regression coverage for language switching, preservation of unsaved tag drafts, and translation template integrity.
+
+No key or metadata migration is required.
+
 ## [1.1.0] — 2026-10-13
 
 ### Changed

@@ -1,6 +1,7 @@
 param(
     [string]$Python = 'python',
-    [string]$ExpectedTag = ''
+    [string]$ExpectedTag = '',
+    [switch]$WithInstaller
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -37,8 +38,13 @@ try {
         throw 'Executable startup, cryptography, assets, or font check failed.'
     }
     if ($report.version -ne $appVersion) { throw 'Executable version mismatch.' }
+    if ($report.languages.Count -ne 2) { throw 'Bilingual interface diagnostic failed.' }
     & $Python tools/package_release.py
     if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
+    if ($WithInstaller) {
+        & "$PSScriptRoot/build_installer.ps1" -Python $Python
+        if ($LASTEXITCODE -ne 0) { throw 'Installer build failed.' }
+    }
     & $Python tools/release_notes.py | Set-Content -LiteralPath dist/release/RELEASE_NOTES.md -Encoding UTF8
     if ($LASTEXITCODE -ne 0) { throw 'Release notes generation failed.' }
     Write-Host "Verified Harpie $appVersion. Release assets are in dist/release."

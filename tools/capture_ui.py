@@ -26,6 +26,7 @@ def main():
         from ui.key_create_dialog import KeyCreateDialog
         from ui.key_detail_dialog import KeyDetailDialog
         from ui.tools_dialog import AgentDialog, TrashDialog
+        from ui.language import change_language
 
         app = QApplication([])
         app.setApplicationName("Harpie UI Preview")
@@ -33,15 +34,16 @@ def main():
         QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.UserScope, sandbox)
         configure_appearance(app)
         app.setStyleSheet(APP_STYLESHEET)
+        change_language('fr', persist=False)
         tags = {name: metadata.create_tag(name, color) for name, color in
-                (("Production", "#2197FE"), ("Personnel", "#A58AFF"), ("GitHub", "#EF89AD"))}
+                (("Production", "#2197FE"), ("Personal", "#A58AFF"), ("GitHub", "#EF89AD"))}
         fixtures = [
-            ("atlas_production", "Infrastructure · serveur principal", "Production", "preview-only", "ed25519"),
-            ("github_personal", "Dépôts et projets personnels", "GitHub", "preview-only", "ed25519"),
-            ("homelab", "Serveur local · réseau personnel", "Personnel", "", "ed25519"),
-            ("legacy_backup", "Sauvegardes · identité RSA", "Production", "", "rsa"),
-            ("studio_deploy", "Déploiement · environnement de test", "Production", "preview-only", "ed25519"),
-            ("travel_laptop", "Accès depuis le portable", "Personnel", "", "ed25519"),
+            ("atlas_production", "Infrastructure · primary server", "Production", "preview-only", "ed25519"),
+            ("github_personal", "Personal repositories and projects", "GitHub", "preview-only", "ed25519"),
+            ("homelab", "Local server · personal network", "Personal", "", "ed25519"),
+            ("legacy_backup", "Backups · RSA identity", "Production", "", "rsa"),
+            ("studio_deploy", "Deployment · test environment", "Production", "preview-only", "ed25519"),
+            ("travel_laptop", "Access from the laptop", "Personal", "", "ed25519"),
         ]
         for index, (name, comment, tag, password, kind) in enumerate(fixtures):
             ok, error = ssh.create_key(name, comment, password, kind)
@@ -101,6 +103,21 @@ def main():
         window._search.clear()
         window._keys_model.update_keys([])
         capture(window, 'empty-library.png', review)
+        window._keys_model.update_keys(ssh.scan_keys())
+        window._language_combo.setCurrentIndex(window._language_combo.findData('en'))
+        window.resize(1380, 980)
+        capture(window, 'library-en.png')
+        english_create = KeyCreateDialog(window)
+        capture(english_create, 'create-key-en.png', review)
+        english_create.close()
+        english_detail = KeyDetailDialog(ssh.scan_keys()[-1], window)
+        capture(english_detail, 'key-details-en.png', review)
+        english_detail.close()
+        window._on_manage_tags()
+        capture(window, 'tags-en.png', review)
+        window._set_view(False)
+        window.resize(920, 640)
+        capture(window, 'library-en-920.png', review)
         window.close()
         app.processEvents()
         print(f"UI screenshots saved to {output}")

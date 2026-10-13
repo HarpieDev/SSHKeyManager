@@ -1,4 +1,5 @@
 """Édition ciblée du config OpenSSH, en conservant les options personnelles."""
+from core.i18n import tr
 import re
 from pathlib import Path
 
@@ -75,16 +76,16 @@ def set_connection(content: str, name: str, host: str, user: str, port: int, ssh
     matches = [(start, end) for start, end in blocks(lines)
                if parse_line(lines[start])[0] == "host" and alias in parse_line(lines[start])[1]]
     if len(matches) > 1:
-        raise ValueError("Plusieurs blocs Host portent cet alias. Modifiez le config manuellement.")
+        raise ValueError(tr('Plusieurs blocs Host portent cet alias. Modifiez le config manuellement.'))
     updates = {"hostname": host, "user": user, "port": str(port), "identityfile": f"~/.ssh/{name}"}
-    labels = {"hostname": "HostName", "user": "User", "port": "Port", "identityfile": "IdentityFile"}
+    labels = {"hostname": "HostName", "user": "User", "port": tr('Port'), "identityfile": "IdentityFile"}
     if matches:
         start, end = matches[0]
         aliases = parse_line(lines[start])[1]
         if len(aliases) != 1 or any(c in aliases[0] for c in "*?!"):
-            raise ValueError("Ce bloc Host est partagé ou utilise un motif. Modification automatique refusée.")
+            raise ValueError(tr('Ce bloc Host est partagé ou utilise un motif. Modification automatique refusée.'))
         if not associated and any(parse_line(line)[0] == "identityfile" for line in lines[start + 1:end]):
-            raise ValueError("Cet alias Host utilise déjà une autre clé. Choisissez un autre nom de clé ou modifiez le config manuellement.")
+            raise ValueError(tr('Cet alias Host utilise déjà une autre clé. Choisissez un autre nom de clé ou modifiez le config manuellement.'))
         replacement = [lines[start]]
         seen = set()
         for line in lines[start + 1:end]:
@@ -128,7 +129,7 @@ def restore_identities(content: str, previous: str, name: str, ssh_dir: Path) ->
         if keyword in {"host", "match"}:
             matches = [(a, b) for a, b in blocks(lines) if parse_line(lines[a]) == (keyword, values)]
             if len(matches) > 1:
-                raise ValueError("Plusieurs blocs de configuration identiques : restauration automatique impossible.")
+                raise ValueError(tr('Plusieurs blocs de configuration identiques : restauration automatique impossible.'))
             if matches:
                 a, b = matches[0]
                 if any(parse_line(line)[0] == "identityfile" and len(parse_line(line)[1]) == 1
@@ -140,7 +141,7 @@ def restore_identities(content: str, previous: str, name: str, ssh_dir: Path) ->
                 block = "".join(old_lines[start:end]).rstrip() + "\n"
                 content = block + ("\nHost *\n" + content if content else "")
             else:
-                raise ValueError("Le bloc Match d'origine a changé. Restaurez sa référence à la clé manuellement.")
+                raise ValueError(tr("Le bloc Match d'origine a changé. Restaurez sa référence à la clé manuellement."))
         else:
             # Directives globales : conserver leur portée, en tête du fichier.
             content = "".join(identity_lines) + content

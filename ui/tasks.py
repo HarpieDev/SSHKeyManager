@@ -1,4 +1,5 @@
 """Tâches de fond Qt : aucune commande longue dans le thread de l'interface."""
+from core.i18n import tr
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QMessageBox
 
@@ -14,7 +15,7 @@ class Task(QThread):
         try:
             self.result = self.function()
         except Exception as exc:
-            self.error = str(exc) or "L'opération a échoué."
+            self.error = str(exc) or tr("L'opération a échoué.")
         finally:
             self.function = None
 
@@ -34,7 +35,7 @@ class BackgroundMixin:
                 if on_error:
                     on_error(task.error)
                 else:
-                    QMessageBox.warning(self, "Opération impossible", task.error)
+                    QMessageBox.warning(self, tr('Opération impossible'), task.error)
             else:
                 callback(task.result)
             task.deleteLater()

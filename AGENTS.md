@@ -1,10 +1,12 @@
 # Contexte permanent
 
-Harpie est un logiciel Windows réservé à l'usage personnel de son propriétaire.
-Il n'est pas destiné au public ni à une commercialisation.
+Harpie est un logiciel Windows destiné à être téléchargé par d'autres utilisateurs.
+L'interface et l'installateur sont disponibles en français et en anglais.
+La publication d'une release est autorisée dans le dépôt configuré ; un changement
+de visibilité d'un dépôt privé exige un choix explicite du propriétaire.
 
 - Privilégier la simplicité, la fiabilité et le confort quotidien.
-- Ne pas ajouter de comptes, télémétrie, cloud, publication ou fonctions multi-utilisateurs.
+- Ne pas ajouter de comptes, télémétrie, cloud ou fonctions multi-utilisateurs.
 - Les clés et les passphrases restent locales ; ne jamais les journaliser.
 - Ne jamais écraser une clé existante. Les suppressions restent récupérables.
 - Conserver les options personnelles du fichier OpenSSH `config`.

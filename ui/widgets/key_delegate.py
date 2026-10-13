@@ -1,3 +1,4 @@
+from core.i18n import tr
 from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate
@@ -43,7 +44,7 @@ class KeyDelegate(QStyledItemDelegate):
         painter.setFont(font)
         painter.setPen(QColor(SECONDARY))
         rect = option.rect.adjusted(56, 40, -12, -12)
-        text = key.comment or ("Clé publique seule" if not key.has_private else "Clé SSH personnelle")
+        text = key.comment or (tr('Clé publique seule') if not key.has_private else tr('Clé SSH personnelle'))
         painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                          painter.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, rect.width()))
         painter.restore()

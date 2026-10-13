@@ -1,3 +1,4 @@
+from core.i18n import tr
 import json
 import logging
 import uuid
@@ -48,7 +49,7 @@ def _load_raw() -> dict:
         data = None
 
     if isinstance(data, dict) and "version" in data and data["version"] != 2:
-        raise ValueError("Version des métadonnées non prise en charge. Le fichier n'a pas été modifié.")
+        raise ValueError(tr("Version des métadonnées non prise en charge. Le fichier n'a pas été modifié."))
 
     if not isinstance(data, dict) or (data.get("version") == 2 and (
         not isinstance(data.get("tags", {}), dict) or not isinstance(data.get("keys", {}), dict)
@@ -58,7 +59,7 @@ def _load_raw() -> dict:
     )):
         backup = METADATA_FILE.with_name(f"metadata.invalid-{datetime.now():%Y%m%d-%H%M%S-%f}.json")
         atomic_write(backup, METADATA_FILE.read_bytes(), private=True, exclusive=True)
-        LAST_WARNING = f"Les tags endommagés ont été sauvegardés dans {backup.name}."
+        LAST_WARNING = tr('Les tags endommagés ont été sauvegardés dans {p0}.', p0=backup.name)
         logger.warning(LAST_WARNING)
         _save_raw(_empty_data())
         return _empty_data()
@@ -90,7 +91,7 @@ def _migrate_legacy(old: dict) -> dict:
         data["tags"][new_id] = {"label": label, "color": color}
         data["keys"][key_name] = {"tag_id": new_id}
     _save_raw(data)
-    logger.info("metadata.json migré vers le format v2")
+    logger.info(tr('metadata.json migré vers le format v2'))
     return data
 
 
@@ -123,16 +124,16 @@ def get_tag(tag_id: str) -> dict | None:
 def create_tag(label: str, color: str) -> str:
     label = label.strip()
     if not label:
-        raise ValueError("Le nom du tag est obligatoire.")
+        raise ValueError(tr('Le nom du tag est obligatoire.'))
     data = _load_raw()
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
-        raise ValueError("Couleur de tag invalide.")
+        raise ValueError(tr('Couleur de tag invalide.'))
     if any(tag.get("label", "").casefold() == label.casefold() for tag in data["tags"].values()):
-        raise ValueError("Un tag avec ce nom existe déjà.")
+        raise ValueError(tr('Un tag avec ce nom existe déjà.'))
     tag_id = uuid.uuid4().hex
     data["tags"][tag_id] = {"label": label, "color": color}
     _save_raw(data)
-    logger.info("Tag créé : %s (%s)", label, tag_id)
+    logger.info(tr('Tag créé : %s (%s)'), label, tag_id)
     return tag_id
 
 
@@ -149,15 +150,15 @@ def update_tag(tag_id: str, label: str, color: str) -> None:
     """Renomme/recolore un tag sans changer son identité ni ses associations."""
     label = label.strip()
     if not label:
-        raise ValueError("Le nom du tag est obligatoire.")
+        raise ValueError(tr('Le nom du tag est obligatoire.'))
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
-        raise ValueError("Couleur de tag invalide.")
+        raise ValueError(tr('Couleur de tag invalide.'))
     data = _load_raw()
     if tag_id not in data["tags"]:
-        raise ValueError("Tag introuvable.")
+        raise ValueError(tr('Tag introuvable.'))
     if any(tid != tag_id and tag.get("label", "").casefold() == label.casefold()
            for tid, tag in data["tags"].items()):
-        raise ValueError("Un tag avec ce nom existe déjà.")
+        raise ValueError(tr('Un tag avec ce nom existe déjà.'))
     data["tags"][tag_id] = {"label": label, "color": color}
     _save_raw(data)
 
@@ -181,10 +182,10 @@ def set_key_tag(key_name: str, tag_id: str) -> None:
         data["keys"].pop(key_name, None)
     else:
         if tag_id not in data["tags"]:
-            raise ValueError("Tag introuvable.")
+            raise ValueError(tr('Tag introuvable.'))
         data["keys"][key_name] = {"tag_id": tag_id}
     _save_raw(data)
-    logger.info("Tag assigné à %s : %s", key_name, tag_id or "aucun")
+    logger.info(tr('Tag assigné à %s : %s'), key_name, tag_id or "aucun")
 
 
 def clear_key_tag(key_name: str) -> None:

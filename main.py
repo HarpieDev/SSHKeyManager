@@ -1,6 +1,8 @@
+from core.i18n import tr
 import sys
 import os
 import json
+import argparse
 from pathlib import Path
 
 try:
@@ -22,17 +24,24 @@ from ui.main_window import MainWindow
 from ui.theme import APP_STYLESHEET
 from ui.appearance import configure_appearance, prepare_text_rendering
 from version import __version__
+from ui.language import initialize_language, change_language
+from core.i18n import language
 
 
 def main() -> int:
-    self_check = "--self-check" in sys.argv
+    parser = argparse.ArgumentParser(description="Harpie SSH Key Manager")
+    parser.add_argument('--self-check', action='store_true')
+    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--language', choices=('en', 'fr'))
+    options, qt_options = parser.parse_known_args()
+    self_check = options.self_check
     if self_check and not os.environ.get("HARPIE_HOME"):
         return 2  # Le diagnostic ne doit jamais utiliser les vraies clés.
-    debug = "--debug" in sys.argv
+    debug = options.debug
     setup_logging(debug=debug)
 
     prepare_text_rendering()
-    app = QApplication(sys.argv)
+    app = QApplication([sys.argv[0], *qt_options])
     app.setApplicationName("Harpie SSH Key Manager")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("Harpie")
@@ -40,6 +49,7 @@ def main() -> int:
         QSettings.setDefaultFormat(QSettings.Format.IniFormat)
         QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.UserScope, os.environ["HARPIE_HOME"])
 
+    initialize_language(options.language)
     font_loaded = configure_appearance(app)
     icon = QIcon(str(logo_path()))
     if not icon.isNull():
@@ -52,12 +62,12 @@ def main() -> int:
         lock.setStaleLockTime(0)
         if not lock.tryLock(0):
             if not self_check:
-                QMessageBox.information(None, "Harpie", "Harpie est déjà ouvert, ou son dossier de données est inaccessible.")
+                QMessageBox.information(None, "Harpie", tr('Harpie est déjà ouvert, ou son dossier de données est inaccessible.'))
             return 1
         window = MainWindow()
     except (OSError, ValueError) as exc:
         if not self_check:
-            QMessageBox.critical(None, "Démarrage impossible", str(exc))
+            QMessageBox.critical(None, tr('Démarrage impossible'), str(exc))
         return 1
     if self_check:
         report = Path(os.environ["HARPIE_HOME"]) / "self-check.json"
@@ -70,7 +80,13 @@ def main() -> int:
                 assert key_material.public_bytes(key_material.load_private(private, "diagnostic temporaire")) == public
                 assert not window._keys_model.rowCount()
                 assets_ok = all((ICONS_DIR / name).is_file() for name in ("harpie.svg", "harpie.ico", "chevron-down.svg", "chevron-up.svg"))
-                report.write_text(json.dumps({"startup": True, "encrypted_key": True, "assets": assets_ok, "font": font_loaded, "version": __version__}), encoding="utf-8")
+                preferred = language()
+                change_language('en', persist=False)
+                assert window._all_nav.text() == 'All keys'
+                change_language('fr', persist=False)
+                assert window._all_nav.text() == 'Toutes les clés'
+                change_language(preferred, persist=False)
+                report.write_text(json.dumps({"startup": True, "encrypted_key": True, "assets": assets_ok, "font": font_loaded, "version": __version__, "languages": ["en", "fr"]}), encoding="utf-8")
                 app.exit(0)
             except Exception:
                 app.exit(1)
