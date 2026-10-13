@@ -10,6 +10,11 @@ harpie-test-*/
 harpie-review-*/
 .review/
 .cursor/
+# Local agent instructions and internal project notes
+AGENTS.md
+afaire.md
+.agents/
+.codex/
 .env
 .env.*
 !.env.example
