@@ -36,6 +36,8 @@ from ui.components import button, icon, label, key_type_name, SummaryCard
 from ui.widgets.key_delegate import KeyDelegate
 from ui.tag_page import TagPage
 from ui.window_frame import IntegratedWindow
+from version import __version__
+from ui.tools_dialog import AgentDialog, TrashDialog
 
 
 class KeysTableModel(QAbstractTableModel):
@@ -141,7 +143,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         icon = QIcon(str(logo_path()))
         if not icon.isNull():
             self.setWindowIcon(icon)
-        self.resize(1280, 860)
+        self.resize(1380, 960)
         self.setMinimumSize(920, 640)
         geometry = QSettings().value("window/geometry")
         if geometry:
@@ -176,11 +178,20 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._content_layout = layout
         layout.setContentsMargins(32, 28, 32, 18)
         layout.setSpacing(18)
+        context = QHBoxLayout()
+        breadcrumb = label("ESPACE PERSONNEL  /  BIBLIOTHÈQUE", "Eyebrow")
+        breadcrumb.setWordWrap(False)
+        context.addWidget(breadcrumb)
+        context.addStretch()
+        local_badge = label("●  Stockage local", "LocalBadge")
+        local_badge.setFixedHeight(28)
+        context.addWidget(local_badge)
+        layout.addLayout(context)
         heading = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(5)
-        titles.addWidget(label("Mes clés SSH", "AppTitle"))
-        titles.addWidget(label("Votre bibliothèque personnelle."))
+        titles.addWidget(label("Vos clés. Votre espace.", "AppTitle"))
+        titles.addWidget(label("Créez, organisez et protégez vos identités SSH."))
         heading.addLayout(titles, 1)
         heading.addWidget(button("Nouvelle clé", self._on_new_key, "PrimaryBtn", "plus"))
         layout.addLayout(heading)
@@ -189,9 +200,9 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         summary_layout = QHBoxLayout(self._summary_strip)
         summary_layout.setContentsMargins(0, 0, 0, 0)
         summary_layout.setSpacing(14)
-        self._summary_total = SummaryCard("Clés SSH", "Bibliothèque", "key", "blue")
-        self._summary_protected = SummaryCard("Avec passphrase", "Clés privées", "lock", "purple")
-        self._summary_warnings = SummaryCard("À vérifier", "Avertissements", "alert", "orange")
+        self._summary_total = SummaryCard("Identités SSH", "Bibliothèque", "key", "blue")
+        self._summary_protected = SummaryCard("Avec passphrase", "Protection", "lock", "purple")
+        self._summary_warnings = SummaryCard("À vérifier", "Diagnostics", "alert", "orange")
         for summary in (self._summary_total, self._summary_protected, self._summary_warnings):
             summary_layout.addWidget(summary, 1)
         layout.addWidget(self._summary_strip)
@@ -209,6 +220,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._search.setObjectName("SearchField")
         self._search.setMinimumHeight(46)
         self._search.setPlaceholderText("Rechercher un nom, un tag, une empreinte…")
+        self._search.setAccessibleName("Rechercher dans les clés SSH")
         self._search.addAction(icon("search"), QLineEdit.ActionPosition.LeadingPosition)
         self._search.setClearButtonEnabled(True)
         self._search.textChanged.connect(self._keys_proxy.setFilterFixedString)
@@ -228,11 +240,11 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         layout.addLayout(toolbar)
 
         body = QHBoxLayout()
-        body.setSpacing(20)
+        body.setSpacing(18)
         card = QFrame()
         card.setObjectName("Card")
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(14, 8, 14, 12)
+        card_layout.setContentsMargins(16, 10, 16, 14)
         card_layout.setSpacing(0)
         list_header = QHBoxLayout()
         list_header.setContentsMargins(8, 12, 8, 8)
@@ -263,13 +275,15 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._keys_table.setShowGrid(False)
         self._keys_table.setMouseTracking(True)
         self._keys_table.verticalHeader().hide()
-        self._keys_table.verticalHeader().setDefaultSectionSize(76)
+        self._keys_table.verticalHeader().setDefaultSectionSize(78)
+        self._keys_table.setAccessibleName("Bibliothèque de clés SSH")
         self._keys_table.setColumnHidden(3, True)
         self._keys_table.setColumnHidden(4, True)
         header = self._keys_table.horizontalHeader()
+        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         header.moveSection(header.visualIndex(1), 0)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        for col, width in ((0, 112), (2, 92), (5, 108)):
+        for col, width in ((0, 106), (2, 82), (5, 100)):
             header.setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
             header.resizeSection(col, width)
         self._keys_table.doubleClicked.connect(self._on_key_double_click)
@@ -292,10 +306,17 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(self._empty_title)
         empty_layout.addWidget(self._empty_hint)
+        self._empty_actions = QWidget()
+        empty_actions = QHBoxLayout(self._empty_actions)
+        empty_actions.addStretch()
+        empty_actions.addWidget(button("Créer une clé", self._on_new_key, "PrimaryBtn", "plus"))
+        empty_actions.addWidget(button("Importer", self._on_import, symbol="import"))
+        empty_actions.addStretch()
+        empty_layout.addWidget(self._empty_actions)
         empty_layout.addStretch()
         self._list_stack.addWidget(empty)
         card_layout.addWidget(self._list_stack, 1)
-        foot = label("Double-clic pour gérer une clé  ·  Entrée pour ouvrir")
+        foot = label("Double-clic pour ouvrir les détails  ·  Entrée pour gérer la sélection", "FooterNote")
         foot.setContentsMargins(8, 10, 8, 0)
         card_layout.addWidget(foot)
         body.addWidget(card, 1)
@@ -312,7 +333,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         layout.addWidget(self._compact_actions)
         self._compact_actions.hide()
         footer = QHBoxLayout()
-        local_note = label("Personnel · stocké sur cet ordinateur", "FooterNote")
+        local_note = label("Harpie  ·  Vos clés restent sur cet ordinateur", "FooterNote")
         local_note.setWordWrap(False)
         footer.addWidget(local_note)
         footer.addStretch()
@@ -334,10 +355,10 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
     def _build_sidebar(self):
         sidebar = QFrame()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(200)
+        sidebar.setFixedWidth(216)
         layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(14, 30, 14, 22)
-        layout.setSpacing(7)
+        layout.setContentsMargins(16, 26, 16, 18)
+        layout.setSpacing(6)
         brand = QHBoxLayout()
         symbol = QLabel()
         symbol.setPixmap(QIcon(str(logo_path())).pixmap(34, 34))
@@ -345,9 +366,9 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         brand.addWidget(label("Harpie", "Brand"))
         brand.addStretch()
         layout.addLayout(brand)
-        layout.addWidget(label("Votre espace SSH", "AppSubtitle"))
+        layout.addWidget(label("SSH KEY MANAGER", "Eyebrow"))
         layout.addSpacing(32)
-        layout.addWidget(label("Bibliothèque", "SidebarSection"))
+        layout.addWidget(label("BIBLIOTHÈQUE", "SidebarSection"))
         self._all_nav = button("Toutes les clés", lambda: self._set_view(False), symbol="grid")
         self._alert_nav = button("À vérifier", lambda: self._set_view(True), symbol="alert")
         self._all_nav.setIcon(icon("grid", "#2197FE", 18))
@@ -358,7 +379,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
             layout.addWidget(item)
         self._all_nav.setChecked(True)
         layout.addSpacing(26)
-        layout.addWidget(label("Outils", "SidebarSection"))
+        layout.addWidget(label("OUTILS", "SidebarSection"))
         for title, handler, symbol, color in (
             ("SSH Agent", self._on_agent, "terminal", "#32D2F0"),
             ("Corbeille", self._on_restore, "trash", "#EF89AD"),
@@ -376,62 +397,87 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         github = button("GitHub SSH Keys", lambda: webbrowser.open("https://github.com/settings/keys"))
         github.setIcon(icon("arrow", "#AEAEB2", 17))
         layout.addWidget(github)
-        layout.addSpacing(14)
-        layout.addWidget(label("Espace personnel", "SidebarSection"))
-        layout.addWidget(label("Vos clés, uniquement ici.", "FooterNote"))
+        layout.addSpacing(12)
+        local = QFrame()
+        local.setObjectName("LocalCard")
+        local.setFixedHeight(94)
+        local_layout = QVBoxLayout(local)
+        local_layout.setContentsMargins(14, 14, 14, 14)
+        local_layout.setSpacing(6)
+        local_layout.addWidget(label("●  Espace local", "FieldLabel"))
+        local_layout.addWidget(label("Sans compte. Sans cloud.", "FooterNote"))
+        local_layout.addWidget(label(f"Harpie  v{__version__}", "FooterNote"))
+        layout.addWidget(local)
         return sidebar
 
     def _build_preview(self):
         card = QFrame()
         card.setObjectName("PreviewCard")
-        card.setFixedWidth(274)
-        outer = QVBoxLayout(card)
-        outer.setContentsMargins(24, 22, 24, 22)
-        outer.setSpacing(12)
-        outer.addWidget(label("Clé sélectionnée", "AppSubtitle"))
-        hero = QHBoxLayout()
-        hero.setSpacing(12)
+        card.setFixedWidth(286)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 18, 16, 16)
+        layout.setSpacing(10)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        details = QWidget()
+        outer = QVBoxLayout(details)
+        outer.setContentsMargins(0, 0, 4, 0)
+        outer.setSpacing(10)
+        caption = QHBoxLayout()
+        heading = label("CLÉ SÉLECTIONNÉE", "Eyebrow")
+        heading.setWordWrap(False)
+        caption.addWidget(heading)
+        caption.addStretch()
+        caption.addWidget(label("↵", "KeyboardHint"))
+        outer.addLayout(caption)
+        hero = QFrame()
+        hero.setObjectName("PreviewHero")
+        hero.setMinimumHeight(136)
+        identity = QVBoxLayout(hero)
+        identity.setContentsMargins(16, 14, 16, 14)
+        identity.setSpacing(8)
         symbol = QLabel()
         symbol.setObjectName("PreviewSymbol")
         symbol.setAlignment(Qt.AlignmentFlag.AlignCenter)
         symbol.setFixedSize(40, 40)
-        symbol.setPixmap(icon("key", "#2197FE", 24).pixmap(24, 24))
-        hero.addWidget(symbol)
-        identity = QVBoxLayout()
-        identity.setSpacing(4)
+        symbol.setPixmap(icon("key", "#9CC6FF", 24).pixmap(24, 24))
+        identity.addWidget(symbol)
         self._preview_name = label("Sélectionnez une clé", "PreviewTitle")
         self._preview_name.setMinimumWidth(0)
         identity.addWidget(self._preview_name)
-        self._preview_state = label("Ses informations apparaîtront ici.")
+        self._preview_state = label("Ses informations apparaîtront ici.", "PreviewState")
         identity.addWidget(self._preview_state)
-        hero.addLayout(identity, 1)
-        outer.addLayout(hero)
+        outer.addWidget(hero)
         facts = QHBoxLayout()
-        facts.setSpacing(16)
+        facts.setSpacing(12)
         self._preview_values = {}
         for title, caption in (("TYPE", "Algorithme"), ("PROTECTION", "Protection"), ("EMPREINTE", "Empreinte SHA256"), ("MODIFIÉE LE", "Dernière modification")):
             group = QVBoxLayout()
-            group.setSpacing(4)
+            group.setSpacing(6)
             group.addWidget(label(caption, "DetailCaption"))
-            value = label("—", "DetailValue")
+            value = label("—", "Fingerprint" if title == "EMPREINTE" else "DetailValue")
             value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            if title == "EMPREINTE":
-                value.setStyleSheet("font-family: Consolas; font-size: 12px; color: #AEAEB2;")
             self._preview_values[title] = value
             group.addWidget(value)
             if title in ("TYPE", "PROTECTION"):
                 facts.addLayout(group, 1)
                 if title == "PROTECTION":
                     outer.addLayout(facts)
+                    rule = QFrame()
+                    rule.setObjectName("Rule")
+                    outer.addWidget(rule)
             else:
                 outer.addLayout(group)
         outer.addStretch()
+        scroll.setWidget(details)
+        layout.addWidget(scroll, 1)
         self._copy_btn = button("Copier la clé publique", self._on_copy_public, "TintedBtn", "copy")
-        self._detail_btn = button("Gérer cette clé", self._open_selected, symbol="arrow")
-        outer.addWidget(self._copy_btn)
-        outer.addWidget(self._detail_btn)
+        self._copy_btn.setToolTip("Copier uniquement la clé publique. Le fichier privé reste sur cet ordinateur.")
+        self._detail_btn = button("Gérer cette clé", self._open_selected, "PrimaryBtn", "arrow")
+        layout.addWidget(self._copy_btn)
+        layout.addWidget(self._detail_btn)
         self._compact_copy = button("Copier publique", self._on_copy_public, symbol="copy")
-        # Sur les petites fenêtres, ces actions restent accessibles sous la liste.
         return card
 
     def _set_view(self, warnings_only):
@@ -452,6 +498,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._summary_total.set_count(total)
         self._summary_protected.set_count(sum(bool(key.has_private and key.encrypted) for key in keys))
         self._summary_warnings.set_count(sum(bool(key.warning) for key in keys))
+        self._empty_actions.setVisible(not total)
         self._empty_title.setText("Aucun résultat" if total else "Votre espace est prêt")
         self._empty_hint.setText("Essayez une autre recherche ou un autre filtre." if total else "Créez ou importez votre première clé SSH.")
         if count and self._selected_key() is None:
@@ -470,13 +517,13 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
         self._preview_name.setText(key.name if key else "Sélectionnez une clé")
         self._preview_name.setToolTip(key.name if key else "")
         self._preview_state.setText((key.warning or key.tag_label or "Clé personnelle") if key else "Ses informations apparaîtront ici.")
-        self._preview_state.setStyleSheet("color: #E9A76C; font-size: 13px;" if key and key.warning else "color: #98989F; font-size: 13px;")
+        self._preview_state.setStyleSheet("color: #F0B779; font-size: 12px;" if key and key.warning else "color: #B6C8E3; font-size: 12px;")
         values = (key_type_name(key.key_type), "Passphrase" if key.encrypted else "Sans passphrase" if key.has_private else "Publique seule", key.fingerprint_sha256 or "—", key.created_at.strftime("%d/%m/%Y · %H:%M")) if key else ("—",) * 4
         for widget, value in zip(self._preview_values.values(), values):
             widget.setToolTip(value)
             if widget is self._preview_values["EMPREINTE"] and key:
                 import textwrap
-                value = "\n".join(textwrap.wrap(value, 30))
+                value = "\n".join(textwrap.wrap(value, 27))
             widget.setText(value)
 
     def _open_selected(self):
@@ -493,8 +540,8 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if hasattr(self, "_preview_card"):
-            self._preview_card.setVisible(event.size().width() >= 1150)
-            self._compact_actions.setVisible(event.size().width() < 1150)
+            self._preview_card.setVisible(event.size().width() >= 1150 and event.size().height() >= 760)
+            self._compact_actions.setVisible(event.size().width() < 1150 or event.size().height() < 760)
             compact_height = event.size().height() < 700
             self._summary_strip.setVisible(not compact_height)
             self._content_layout.setSpacing(14 if compact_height else 18)
@@ -597,13 +644,8 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
 
     def _on_restore(self):
         def listed(items):
-            if not items:
-                QMessageBox.information(self, "Corbeille Harpie", "Aucune clé à restaurer.")
-                return
-            labels = [f"{item['name']} — {item['deleted_at'][:19].replace('T', ' ')}" for item in items]
-            label, accepted = QInputDialog.getItem(self, "Restaurer une clé", "Clé", labels, editable=False)
-            if accepted:
-                self.run_task(lambda: ssh_manager.restore_deleted_key(items[labels.index(label)]["id"]), self._operation_finished)
+            if TrashDialog(items, self).exec() == QDialog.DialogCode.Accepted:
+                self.refresh_keys()
         self.run_task(ssh_manager.list_deleted_keys, listed)
 
     def _operation_finished(self, result):
@@ -616,7 +658,7 @@ class MainWindow(BackgroundMixin, IntegratedWindow):
     def _on_agent(self):
         def completed(result):
             text, error = result
-            QMessageBox.information(self, "SSH Agent", error or text)
+            AgentDialog(text, error, self).exec()
         self.run_task(ssh_manager.agent_keys, completed)
 
     def _on_manage_tags(self):

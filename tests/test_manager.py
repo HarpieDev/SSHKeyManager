@@ -353,6 +353,39 @@ class UiTests(IsolatedTest):
         assert configure_appearance(cls.app), "La police Inter intégrée doit être chargée."
         cls.app.setStyleSheet(APP_STYLESHEET)
 
+    def test_trash_dialog_restores_identity_and_handles_empty_state(self):
+        from PySide6.QtWidgets import QDialog
+        from ui.tools_dialog import TrashDialog
+        self.create('recover_me', passphrase='temporary secret')
+        tag = m.create_tag('Recovery', '#2197FE')
+        m.set_key_tag('recover_me', tag)
+        private_before = (s.SSH_DIR / 'recover_me').read_bytes()
+        self.assertTrue(s.delete_key('recover_me')[0])
+        dialog = TrashDialog(s.list_deleted_keys())
+        try:
+            self.assertTrue(dialog._restore_btn.isEnabled())
+            dialog._restore_btn.click()
+            deadline = time.monotonic() + 10
+            while getattr(dialog, '_task', None) and time.monotonic() < deadline:
+                self.app.processEvents()
+                time.sleep(.01)
+            self.assertIsNone(dialog._task)
+            self.assertEqual(dialog.result(), QDialog.DialogCode.Accepted)
+            self.assertEqual((s.SSH_DIR / 'recover_me').read_bytes(), private_before)
+            self.assertEqual(m.get_key_tag('recover_me')[0], tag)
+        finally:
+            dialog.deleteLater()
+            self.app.processEvents()
+        empty = TrashDialog(s.list_deleted_keys())
+        try:
+            self.assertFalse(empty._restore_btn.isEnabled())
+            self.assertFalse(empty._empty.isHidden())
+            empty._restore()
+            self.assertIsNone(getattr(empty, '_task', None))
+        finally:
+            empty.deleteLater()
+            self.app.processEvents()
+
     def test_integrated_window_controls_and_resize_zones(self):
         from PySide6.QtCore import QPoint, Qt
         from PySide6.QtTest import QTest

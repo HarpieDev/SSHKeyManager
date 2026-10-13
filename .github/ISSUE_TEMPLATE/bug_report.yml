@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible problem using disposable SSH identities.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: Never include private keys, passphrases, tokens, or unredacted personal configuration.
+  - type: input
+    id: version
+    attributes:
+      label: Harpie and Windows versions
+      placeholder: Harpie 1.1.0 / Windows 11 x64
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Use temporary keys and an isolated HARPIE_HOME directory.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true

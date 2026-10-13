@@ -27,7 +27,7 @@ from core.ssh_manager import SshKey
 from ui.theme import tag_display
 from ui.widgets.tag_dialog import TagAssignWidget
 from ui.tasks import BackgroundMixin
-from ui.components import label, field, button, key_type_name
+from ui.components import label, field, button, key_type_name, dialog_header
 
 
 def _info_label(text: str) -> QLabel:
@@ -59,20 +59,17 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
         super().__init__(parent)
         self._key = key
         self.setWindowTitle(f"Gérer — {key.name}")
-        self.resize(680, 800)
+        self.resize(720, 820)
         self.setMinimumSize(580, 540)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 26, 28, 24)
         layout.setSpacing(12)
         layout.addWidget(label("DÉTAILS DE LA CLÉ", "Eyebrow"))
-        heading = label(key.name, "AppTitle")
-        heading.setStyleSheet("font-size: 28px; font-weight: 600; color: #F5F5F7;")
-        layout.addWidget(heading)
         protection = "Protégée par passphrase" if key.encrypted else "Sans passphrase" if key.has_private else "Clé publique seule"
-        layout.addWidget(label(f"{key_type_name(key.key_type)}  ·  {protection}  ·  Modifiée le {key.created_at:%d/%m/%Y}"))
+        layout.addWidget(dialog_header(key.name, f"{key_type_name(key.key_type)}  ·  {protection}  ·  {key.created_at:%d/%m/%Y}"))
         if key.warning:
             warning = label(key.warning)
-            warning.setStyleSheet("color: #E9A76C; background: #332B1F; border-radius: 16px; padding: 14px;")
+            warning.setStyleSheet("color: #F0B779; background: #372B22; border: 1px solid #543D29; border-radius: 12px; padding: 14px;")
             layout.addWidget(warning)
         self._tabs = QTabWidget()
         layout.addWidget(self._tabs, 1)
@@ -91,7 +88,7 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
         overview = page("Vue d’ensemble")
         overview.addWidget(label("Empreinte SHA256", "FieldLabel"))
         fingerprint = _info_label(key.fingerprint_sha256 or "—")
-        fingerprint.setStyleSheet("font-family: Consolas; font-size: 12px; color: #D1D1D6; background: #2C2C2E; padding: 14px; border-radius: 16px;")
+        fingerprint.setObjectName("Fingerprint")
         overview.addWidget(fingerprint)
         self._comment = QLineEdit(key.comment or "")
         self._comment.setPlaceholderText("Commentaire de la clé")
@@ -314,17 +311,25 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
     def _on_passphrase(self):
         dialog = QDialog(self)
         dialog.setWindowTitle("Changer la passphrase")
-        dialog.setMinimumWidth(420)
+        dialog.setMinimumWidth(540)
         layout = QVBoxLayout(dialog)
-        form = QFormLayout()
+        layout.setContentsMargins(28, 26, 28, 24)
+        layout.setSpacing(18)
+        layout.addWidget(dialog_header("Changer la passphrase", "Mettez à jour la protection du fichier privé.", "lock", "purple"))
+        form = QVBoxLayout()
+        form.setSpacing(14)
         fields = []
-        for label in ("Actuelle (si protégée)", "Nouvelle (vide = sans protection)", "Confirmer la nouvelle"):
-            field = QLineEdit()
-            field.setEchoMode(QLineEdit.EchoMode.Password)
-            fields.append(field)
-            form.addRow(label, field)
+        for caption in ("Passphrase actuelle (si protégée)", "Nouvelle passphrase (optionnelle)", "Confirmer la nouvelle passphrase"):
+            control = QLineEdit()
+            control.setEchoMode(QLineEdit.EchoMode.Password)
+            fields.append(control)
+            form.addWidget(field(caption, control))
         layout.addLayout(form)
+        layout.addWidget(label("Laisser la nouvelle passphrase vide retire la protection de la clé.", "SecurityNote"))
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Enregistrer")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryBtn")
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Annuler")
         layout.addWidget(buttons)
         def confirm():
             if fields[1].text() != fields[2].text():
@@ -336,5 +341,5 @@ class KeyDetailDialog(BackgroundMixin, QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             old, new = fields[0].text(), fields[1].text()
             self.run_task(lambda: ssh_manager.change_passphrase(self._key.name, old, new), self._mutation_finished)
-        for field in fields:
-            field.clear()
+        for control in fields:
+            control.clear()

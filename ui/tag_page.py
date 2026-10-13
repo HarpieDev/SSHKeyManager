@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 from core import metadata_store
 from ui.appearance import smooth_text_font
 from ui.components import button, field, icon, label
-from ui.theme import COLOR_PALETTE, PANEL, SECONDARY, TEXT, chip_colors
+from ui.theme import COLOR_PALETTE, HOVER, PANEL, SECONDARY, SELECTED, TEXT, chip_colors
 from ui.widgets.tags import ColorPalettePicker
 
 
@@ -31,7 +31,7 @@ class TagListDelegate(QStyledItemDelegate):
         hovered = option.state & QStyle.StateFlag.State_MouseOver
         painter.setPen(Qt.PenStyle.NoPen)
         if selected or hovered:
-            painter.setBrush(QColor("#323236" if selected else "#272729"))
+            painter.setBrush(QColor(SELECTED if selected else HOVER))
             painter.drawRoundedRect(rect, 16, 16)
         bg, fg, _ = chip_colors(tag['color'])
         badge = rect.adjusted(12, 0, 0, 0)
@@ -107,10 +107,11 @@ class TagPage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(32, 28, 32, 18)
         root.setSpacing(18)
+        root.addWidget(label('ESPACE PERSONNEL  /  ORGANISATION', 'Eyebrow'))
         heading = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(5)
-        titles.addWidget(label('Tags', 'AppTitle'))
+        titles.addWidget(label('Une place pour chaque clé.', 'AppTitle'))
         titles.addWidget(label('Organisez vos clés par projet ou par usage.'))
         heading.addLayout(titles, 1)
         heading.addWidget(button('Nouveau tag', self._request_new, 'PrimaryBtn', 'plus'))

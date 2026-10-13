@@ -52,7 +52,7 @@ class WindowControl(QPushButton):
             painter.drawLine(QPoint(-4, 4), QPoint(4, -4))
         elif self.restored:
             painter.drawRect(-3, -5, 8, 8)
-            painter.fillRect(-5, -3, 8, 8, QColor('#38383A' if self.underMouse() else '#202020'))
+            painter.fillRect(-5, -3, 8, 8, QColor('#252B35' if self.underMouse() else '#0C0E12'))
             painter.drawRect(-5, -3, 8, 8)
         else:
             painter.drawRect(-5, -5, 10, 10)

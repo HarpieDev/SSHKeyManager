@@ -232,7 +232,7 @@ class TagFilterBar(QWidget):
                 item.widget().deleteLater()
         self._buttons.clear()
 
-        all_btn = self._make_btn("Tous", "all", "#2C2C2E", "#D1D1D6", "#48484A")
+        all_btn = self._make_btn("Tous", "all", "#232A35", "#B8D6FF", "#3C5981")
         all_btn.setChecked(self._active == "all")
         self._layout.addWidget(all_btn)
         self._buttons["all"] = all_btn
@@ -259,9 +259,10 @@ class TagFilterBar(QWidget):
         btn.setStyleSheet(
             f"QPushButton {{ background-color: {bg}; color: {fg}; "
             f"border: 1px solid transparent; border-radius: 15px; "
-            f"padding: 4px 12px; min-height: 18px; font-size: 12px; font-weight: 500; }}"
+            f"padding: 4px 11px; min-height: 18px; font-size: 11px; font-weight: 500; }}"
             f"QPushButton:hover {{ border-color: {border}; }}"
             f"QPushButton:checked {{ border-color: {fg}; }}"
+            f"QPushButton:focus {{ border-color: {fg}; }}"
         )
         btn.clicked.connect(lambda: self._on_click(tag_id))
         return btn

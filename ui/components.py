@@ -65,22 +65,22 @@ class SummaryCard(QFrame):
         super().__init__(parent)
         self.setObjectName("SummaryCard")
         self.setProperty("tone", tone)
-        self.setMinimumHeight(108)
+        self.setMinimumHeight(112)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 16, 20, 16)
-        layout.setSpacing(6)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(8)
         top = QHBoxLayout()
         badge = QLabel()
         badge.setObjectName("SummaryIcon")
-        badge.setFixedSize(32, 32)
+        badge.setFixedSize(36, 36)
         badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        color = {"blue": "#102C46", "purple": "#FFFFFF", "orange": "#3A240F"}.get(tone, "#FFFFFF")
+        color = {"blue": "#81B3FF", "purple": "#AD93EB", "orange": "#F0B779"}.get(tone, "#FFFFFF")
         badge.setPixmap(icon(symbol, color, 20).pixmap(20, 20))
-        top.addWidget(badge)
-        top.addStretch()
         self.value = label("0", "SummaryValue")
         self.value.setWordWrap(False)
         top.addWidget(self.value)
+        top.addStretch()
+        top.addWidget(badge)
         layout.addLayout(top)
         bottom = QHBoxLayout()
         bottom.addWidget(label(title, "SummaryTitle"))
@@ -99,7 +99,7 @@ class SummaryCard(QFrame):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self._hint.setVisible(event.size().width() >= 260)
+        self._hint.setVisible(event.size().width() >= 300)
 
 
 def field(title: str, control: QWidget) -> QWidget:
@@ -107,10 +107,37 @@ def field(title: str, control: QWidget) -> QWidget:
     layout = QVBoxLayout(widget)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(7)
-    layout.addWidget(label(title, "FieldLabel"))
+    caption = label(title, "FieldLabel")
+    caption.setBuddy(control)
+    control.setAccessibleName(title)
+    layout.addWidget(caption)
     layout.addWidget(control)
     return widget
 
 
 def key_type_name(value: str) -> str:
     return {"ssh-ed25519": "Ed25519", "ssh-rsa": "RSA", "ed25519": "Ed25519", "rsa": "RSA"}.get(value, value)
+
+
+def dialog_header(title: str, subtitle: str, symbol: str = "key", tone: str = "blue") -> QWidget:
+    """A consistent, accessible identity block for application dialogs."""
+    header = QWidget()
+    row = QHBoxLayout(header)
+    row.setContentsMargins(0, 0, 0, 8)
+    row.setSpacing(16)
+    badge = QLabel()
+    badge.setFixedSize(56, 56)
+    badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    colors = {"blue": ("#1C304A", "#81B3FF"), "purple": ("#2D263F", "#AD93EB"), "pink": ("#34232D", "#E896B4")}
+    background, foreground = colors[tone]
+    badge.setStyleSheet(f"background: {background}; border-radius: 18px;")
+    badge.setPixmap(icon(symbol, foreground, 26).pixmap(26, 26))
+    row.addWidget(badge, 0, Qt.AlignmentFlag.AlignTop)
+    text = QVBoxLayout()
+    text.setSpacing(6)
+    heading = label(title, "AppTitle")
+    heading.setStyleSheet("font-size: 27px; font-weight: 600;")
+    text.addWidget(heading)
+    text.addWidget(label(subtitle))
+    row.addLayout(text, 1)
+    return header

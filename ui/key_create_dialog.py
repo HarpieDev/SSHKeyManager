@@ -19,21 +19,20 @@ from PySide6.QtWidgets import (
 from core import metadata_store, ssh_manager
 from ui.widgets.tag_dialog import TagAssignWidget
 from ui.tasks import BackgroundMixin
-from ui.components import label, field
+from ui.components import label, field, dialog_header
 
 
 class KeyCreateDialog(BackgroundMixin, QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Nouvelle clé SSH")
-        self.resize(640, 760)
+        self.resize(680, 770)
         self.setMinimumSize(560, 550)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 26, 28, 24)
         layout.setSpacing(12)
-        layout.addWidget(label("NOUVELLE CLÉ", "Eyebrow"))
-        layout.addWidget(label("Créer une clé SSH", "AppTitle"))
-        layout.addWidget(label("Une nouvelle identité pour vos serveurs et services."))
+        layout.addWidget(label("BIBLIOTHÈQUE  /  NOUVELLE IDENTITÉ", "Eyebrow"))
+        layout.addWidget(dialog_header("Créer une clé SSH", "Une identité locale pour vos serveurs et services.", "plus"))
         tabs = QTabWidget()
         layout.addWidget(tabs, 1)
 
@@ -61,7 +60,7 @@ class KeyCreateDialog(BackgroundMixin, QDialog):
         row.addWidget(field("Nom de la clé", self._name), 2)
         row.addWidget(field("Algorithme", self._type), 1)
         inner.addLayout(row)
-        inner.addWidget(label("Ed25519 offre des clés compactes et convient à la plupart des usages."))
+        inner.addWidget(label("Ed25519 : des clés compactes, adaptées à la plupart des usages.", "SecurityNote"))
         inner.addWidget(field("Commentaire", self._comment))
         inner.addWidget(field("Tag", self._tag_widget))
         inner.addSpacing(6)
@@ -100,6 +99,7 @@ class KeyCreateDialog(BackgroundMixin, QDialog):
         form.addStretch()
         tabs.addTab(connection, "Connexion optionnelle")
 
+        layout.addWidget(label("La clé privée est créée sur cet ordinateur. Aucune donnée n’est envoyée.", "FooterNote"))
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Créer la clé")
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("PrimaryBtn")

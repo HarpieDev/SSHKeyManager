@@ -21,6 +21,7 @@ from ui.assets import logo_path, ICONS_DIR
 from ui.main_window import MainWindow
 from ui.theme import APP_STYLESHEET
 from ui.appearance import configure_appearance, prepare_text_rendering
+from version import __version__
 
 
 def main() -> int:
@@ -33,6 +34,7 @@ def main() -> int:
     prepare_text_rendering()
     app = QApplication(sys.argv)
     app.setApplicationName("Harpie SSH Key Manager")
+    app.setApplicationVersion(__version__)
     app.setOrganizationName("Harpie")
     if os.environ.get("HARPIE_HOME"):
         QSettings.setDefaultFormat(QSettings.Format.IniFormat)
@@ -68,7 +70,7 @@ def main() -> int:
                 assert key_material.public_bytes(key_material.load_private(private, "diagnostic temporaire")) == public
                 assert not window._keys_model.rowCount()
                 assets_ok = all((ICONS_DIR / name).is_file() for name in ("harpie.svg", "harpie.ico", "chevron-down.svg", "chevron-up.svg"))
-                report.write_text(json.dumps({"startup": True, "encrypted_key": True, "assets": assets_ok, "font": font_loaded}), encoding="utf-8")
+                report.write_text(json.dumps({"startup": True, "encrypted_key": True, "assets": assets_ok, "font": font_loaded, "version": __version__}), encoding="utf-8")
                 app.exit(0)
             except Exception:
                 app.exit(1)

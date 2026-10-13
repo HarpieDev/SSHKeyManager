@@ -1,0 +1,57 @@
+name: Windows Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, verify, and publish
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          cache: pip
+      - name: Require a version tag
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Dispatch this workflow from an existing version tag.' }
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test, build, diagnose, and package
+        shell: pwsh
+        run: ./tools/build_release.ps1 -ExpectedTag $env:GITHUB_REF_NAME
+      - name: Save verified build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: Harpie-${{ github.ref_name }}-windows-x64
+          path: |
+            dist/release/*.zip
+            dist/release/SHA256SUMS.txt
+            dist/release/RELEASE_NOTES.md
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $archive = (Get-ChildItem -LiteralPath dist/release -Filter '*.zip').FullName
+          gh release create $env:GITHUB_REF_NAME $archive dist/release/SHA256SUMS.txt --verify-tag --title "Harpie $env:GITHUB_REF_NAME" --notes-file dist/release/RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }
