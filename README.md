@@ -5,7 +5,7 @@
   <p>A local SSH key manager for Windows, built for a quieter daily workflow.</p>
   <p>
     <a href="https://github.com/HarpieDev/SSHKeyManager/actions/workflows/ci.yml"><img src="https://github.com/HarpieDev/SSHKeyManager/actions/workflows/ci.yml/badge.svg" alt="Windows tests"></a>
-    <a href="https://github.com/HarpieDev/SSHKeyManager/releases/latest"><img src="https://img.shields.io/badge/version-1.2.0-619fff" alt="Version 1.2.0"></a>
+    <a href="https://github.com/HarpieDev/SSHKeyManager/releases/latest"><img src="https://img.shields.io/badge/version-1.2.1-619fff" alt="Version 1.2.1"></a>
     <img src="https://img.shields.io/badge/platform-Windows%20x64-232a35" alt="Windows x64">
     <img src="https://img.shields.io/badge/data-local%20only-26463a" alt="Local storage">
   </p>
@@ -40,18 +40,18 @@ All screenshots use disposable demo identities, generated in an isolated directo
 
 ## Getting started
 
-1. Download `Harpie-1.2.0-setup-x64.exe` from the [latest release](https://github.com/HarpieDev/SSHKeyManager/releases/latest).
+1. Download `Harpie-1.2.1-setup-x64.exe` from the [latest release](https://github.com/HarpieDev/SSHKeyManager/releases/latest).
 2. Run the installer, choose English or French, then open **Harpie** from the Windows Start menu. Installation is per user and does not require administrator rights.
 3. Create or import an identity. Install its **public** key on your server or GitHub account before connecting.
 
-Prefer no installation? Download `Harpie-1.2.0-windows-x64.zip`, extract it, and launch `Harpie.exe`. Python is bundled in both formats. Uninstalling Harpie removes application files and shortcuts while preserving your SSH keys and preferences.
+Prefer no installation? Download `Harpie-1.2.1-windows-x64.zip`, extract it, and launch `Harpie.exe`. Python is bundled in both formats. Uninstalling Harpie removes application files and shortcuts while preserving your SSH keys and preferences.
 
 Target platform: **Windows 10/11, x64**. The installer and application are currently unsigned. OpenSSH Client is needed for connections and agent commands; key creation and local key management work without it. To use SSH Agent, enable the Windows **OpenSSH Authentication Agent** service. Agent passphrases are entered directly in its terminal.
 
 To check a download, compare its hash with `SHA256SUMS.txt` from the same release:
 
 ```powershell
-Get-FileHash .\Harpie-1.2.0-setup-x64.exe -Algorithm SHA256
+Get-FileHash .\Harpie-1.2.1-setup-x64.exe -Algorithm SHA256
 ```
 
 ### Keyboard shortcuts

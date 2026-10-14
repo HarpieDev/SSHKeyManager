@@ -18,7 +18,7 @@ except ImportError as exc:
     raise
 
 from core.logger import setup_logging
-from core import metadata_store, key_material
+from core import metadata_store, key_material, ssh_manager
 from ui.assets import logo_path, ICONS_DIR
 from ui.main_window import MainWindow
 from ui.theme import APP_STYLESHEET
@@ -70,8 +70,62 @@ def main() -> int:
             QMessageBox.critical(None, tr('Démarrage impossible'), str(exc))
         return 1
     if self_check:
+        app.setQuitOnLastWindowClosed(False)
         report = Path(os.environ["HARPIE_HOME"]) / "self-check.json"
+        scenarios = [('en', 'ed25519', 'temporary diagnostic passphrase'), ('fr', 'rsa', '')]
+        scenario = 0
+        preferred = language()
+        assets_ok = False
+
+        def submit_creation():
+            from PySide6.QtWidgets import QDialogButtonBox
+            from ui.key_create_dialog import KeyCreateDialog
+            dialog = app.activeModalWidget()
+            if not isinstance(dialog, KeyCreateDialog):
+                app.exit(1)
+                return
+            locale, kind, password = scenarios[scenario]
+            dialog._name.setText('self_check_' + locale)
+            dialog._type.setCurrentIndex(dialog._type.findData(kind))
+            dialog._passphrase.setText(password)
+            dialog._confirm.setText(password)
+            dialog.findChild(QDialogButtonBox).button(QDialogButtonBox.StandardButton.Ok).click()
+
+        def create_next():
+            change_language(scenarios[scenario][0], persist=False)
+            QTimer.singleShot(25, submit_creation)
+            window._on_new_key()
+            QTimer.singleShot(0, verify_creation)
+
+        def verify_creation():
+            nonlocal scenario
+            if getattr(window, "_task", None) is not None:
+                QTimer.singleShot(50, verify_creation)
+                return
+            try:
+                locale, kind, password = scenarios[scenario]
+                assert window._keys_model.rowCount() == scenario + 1
+                name = 'self_check_' + locale
+                private = (ssh_manager.SSH_DIR / name).read_bytes()
+                public = (ssh_manager.SSH_DIR / (name + '.pub')).read_bytes().strip()
+                assert key_material.public_bytes(key_material.load_private(private, password)) == b" ".join(public.split(maxsplit=2)[:2])
+                assert public.split(maxsplit=1)[0] == (b'ssh-ed25519' if kind == 'ed25519' else b'ssh-rsa')
+                scenario += 1
+                if scenario < len(scenarios):
+                    create_next()
+                    return
+                # Remove only the disposable identities created by this diagnostic.
+                for locale, _, _ in scenarios:
+                    for suffix in ('', '.pub'):
+                        (ssh_manager.SSH_DIR / ('self_check_' + locale + suffix)).unlink()
+                change_language(preferred, persist=False)
+                report.write_text(json.dumps({"startup": True, "encrypted_key": True, "key_creation": True, "assets": assets_ok, "font": font_loaded, "version": __version__, "languages": ["en", "fr"]}), encoding="utf-8")
+                app.exit(0)
+            except Exception:
+                app.exit(1)
+
         def check():
+            nonlocal assets_ok
             if getattr(window, "_task", None) is not None:
                 QTimer.singleShot(50, check)
                 return
@@ -80,14 +134,11 @@ def main() -> int:
                 assert key_material.public_bytes(key_material.load_private(private, "diagnostic temporaire")) == public
                 assert not window._keys_model.rowCount()
                 assets_ok = all((ICONS_DIR / name).is_file() for name in ("harpie.svg", "harpie.ico", "chevron-down.svg", "chevron-up.svg"))
-                preferred = language()
                 change_language('en', persist=False)
                 assert window._all_nav.text() == 'All keys'
                 change_language('fr', persist=False)
                 assert window._all_nav.text() == 'Toutes les clés'
-                change_language(preferred, persist=False)
-                report.write_text(json.dumps({"startup": True, "encrypted_key": True, "assets": assets_ok, "font": font_loaded, "version": __version__, "languages": ["en", "fr"]}), encoding="utf-8")
-                app.exit(0)
+                create_next()
             except Exception:
                 app.exit(1)
         QTimer.singleShot(0, check)

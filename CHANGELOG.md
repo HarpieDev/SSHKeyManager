@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1] — 2026-10-14
+
+### Fixed
+
+- Prevent a native crash after creating an SSH key and returning to the library. Background operation completion now runs through a queued Qt slot on the interface thread and waits for thread cleanup before closing a dialog.
+
+### Changed
+
+- The packaged application's diagnostic now creates temporary encrypted Ed25519 and RSA identities through the real English and French dialogs, then verifies the library refresh. Build and installer checks require this diagnostic to pass.
+
 ## [1.2.0] — 2026-10-13
 
 ### Added
