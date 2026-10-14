@@ -33,7 +33,7 @@ try {
         if (-not (Test-Path -LiteralPath $shortcut)) { throw 'Start menu shortcut is missing.' }
         Run-HiddenProcess $executable ("--self-check --language $locale")
         $report = Get-Content -LiteralPath (Join-Path $env:HARPIE_HOME 'self-check.json') -Raw | ConvertFrom-Json
-        if (-not ($report.startup -and $report.font -and $report.assets -and $report.encrypted_key -and $report.version -eq $appVersion)) { throw 'Installed application diagnostic failed.' }
+        if (-not ($report.startup -and $report.font -and $report.assets -and $report.encrypted_key -and $report.key_creation -and $report.version -eq $appVersion)) { throw 'Installed application diagnostic failed.' }
         $resolvedUninstaller = [IO.Path]::GetFullPath($uninstaller)
         $resolvedTestRoot = [IO.Path]::GetFullPath($testRoot).TrimEnd('\') + '\'
         if (-not $resolvedUninstaller.StartsWith($resolvedTestRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Uninstaller path is outside the disposable test directory.' }

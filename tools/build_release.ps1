@@ -34,8 +34,8 @@ try {
     $check.Refresh()
     if ($check.ExitCode -ne 0) { throw 'Executable diagnostic failed.' }
     $report = Get-Content -LiteralPath (Join-Path $diagnosticRoot 'self-check.json') -Raw | ConvertFrom-Json
-    if (-not ($report.startup -and $report.encrypted_key -and $report.assets -and $report.font)) {
-        throw 'Executable startup, cryptography, assets, or font check failed.'
+    if (-not ($report.startup -and $report.encrypted_key -and $report.key_creation -and $report.assets -and $report.font)) {
+        throw 'Executable startup, key creation, cryptography, assets, or font check failed.'
     }
     if ($report.version -ne $appVersion) { throw 'Executable version mismatch.' }
     if ($report.languages.Count -ne 2) { throw 'Bilingual interface diagnostic failed.' }

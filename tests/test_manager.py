@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -705,6 +706,46 @@ class UiTests(IsolatedTest):
         self.assertEqual(s.scan_keys()[0].comment, "Commentaire complet")
         dialog.deleteLater()
         self.app.processEvents()
+
+    def test_modal_creation_and_refresh_survive_in_a_separate_process(self):
+        diagnostic_home = self.root / 'modal-diagnostic'
+        env = dict(os.environ, HARPIE_HOME=str(diagnostic_home), QT_QPA_PLATFORM='offscreen')
+        run = subprocess.run(
+            [sys.executable, '-X', 'faulthandler', str(PROJECT / 'main.py'), '--self-check'],
+            cwd=PROJECT, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=45,
+        )
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        report = json.loads((diagnostic_home / 'self-check.json').read_text(encoding='utf-8'))
+        self.assertTrue(report['key_creation'])
+        self.assertEqual(report['languages'], ['en', 'fr'])
+        self.assertFalse(list((diagnostic_home / '.ssh').glob('self_check_*')))
+
+    def test_background_completion_and_errors_return_to_the_ui_thread(self):
+        from ui.key_create_dialog import KeyCreateDialog
+        dialog = KeyCreateDialog()
+        gui_thread = threading.get_ident()
+        results = []
+        errors = []
+
+        def fail():
+            raise ValueError('temporary failure')
+
+        try:
+            for operation in (threading.get_ident, fail):
+                dialog.run_task(operation, lambda result: results.append((threading.get_ident(), result)),
+                                on_error=lambda error: errors.append((threading.get_ident(), error)))
+                deadline = time.monotonic() + 10
+                while dialog._task is not None and time.monotonic() < deadline:
+                    self.app.processEvents()
+                    time.sleep(.01)
+                self.assertIsNone(dialog._task)
+                self.assertTrue(dialog.isEnabled())
+            self.assertEqual(results[0][0], gui_thread)
+            self.assertNotEqual(results[0][1], gui_thread)
+            self.assertEqual(errors, [(gui_thread, 'temporary failure')])
+        finally:
+            dialog.deleteLater()
+            self.app.processEvents()
 
     def test_date_sort_uses_timestamps_and_deleted_filter_resets(self):
         from PySide6.QtCore import Qt
